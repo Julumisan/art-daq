@@ -12,7 +12,7 @@ setup(
     name='art-daq',
     version='0.1.0',
     description='Paquete para usar la tarjeta de NI, USB-6001',
-    packages=['art-daq'],
+    packages=['Script'],
     install_requires=[
         'nidaqmx',
     ],
@@ -28,6 +28,6 @@ setup(
     ],
     
     url='https://github.com/Julumisan/art-daq',
-    author='Juan luis',
+    author='Juan Luis',
     author_email='julumisan@gmail.com'
 )
