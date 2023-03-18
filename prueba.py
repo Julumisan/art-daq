@@ -52,5 +52,5 @@ def set_voltage_anal(chanA, voltage):
         
 def set_voltage_digital(chanD, voltage):
     with nidaqmx.Task() as task:
-        task.do_channels.add_do_chan(chanD) # Especificar la salida digital 0.1 del dispositivo DAQ
-        task.write(voltage) # Establecer el voltaje en 0.1
+        task.do_channels.add_do_chan(chanD) # Especificar la salida digital X.Y del dispositivo DAQ
+        task.write(voltage) # Establecer el voltaje en el canal digital
