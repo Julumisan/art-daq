@@ -21,9 +21,11 @@ import nidaqmx
 
 def get_voltage_analogic(chanA):
     with nidaqmx.Task() as task:
-        task.ao_channels.add_ao_voltage_chan(chanA)
-        voltage = task.read_analog_f64()
-        return voltage
+        task.ai_channels.add_ai_voltage_chan("PFG/ai0", terminal_config=nidaqmx.constants.TerminalConfiguration.RSE)
+        # Leer el voltaje actual del canal ai0 10 veces
+        voltages = task.read(number_of_samples_per_channel=10)
+        # Calcular la media de los valores leídos
+        mean_voltage = sum(voltages)/len(voltages)
 
 
 
