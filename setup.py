@@ -10,7 +10,7 @@ from setuptools import setup
 
 setup(
     name='art-daq',
-    version='0.2.0',
+    version='0.2.1',
     description='Paquete para usar la tarjeta de NI, USB-6001',
     packages=['Script'],
     install_requires=[
