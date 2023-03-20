@@ -66,7 +66,7 @@ def set_voltage_digital(chanD, voltage):
 def daq_timer(chanA, duration):
     # Se crea una tarea vacía.
     with nidaqmx.Task() as task:
-        # Se agrega un canal de entrada analógica al objeto de tarea. "PFG/ai0"
+        # Se agrega un canal de entrada analógica al objeto de tarea. "Dev/aiX"
         # es el identificador del canal de entrada.
         ai_channel = task.ai_channels.add_ai_voltage_chan(chanA)
         
