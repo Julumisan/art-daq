@@ -76,7 +76,7 @@ def all_analogic_safe(device_name):
 
 
 # Acceso al voltaje del canal analógico de entrada. 
-# chanA tiene el formato " "Dev/aiX" "
+# chan_a tiene el formato " "Dev/aiX" "
 
 def get_voltage_analogic(chan_a):
     with nidaqmx.Task() as task:
@@ -92,7 +92,7 @@ def get_voltage_analogic(chan_a):
 
 
 # Acceso al voltaje del canal digital. 
-# chanD tiene el formato " "Dev/portX/lineY" "
+# chan_d tiene el formato " "Dev/portX/lineY" "
 
 def get_state_digital(chan_d):
     with nidaqmx.Task() as task:
@@ -102,7 +102,7 @@ def get_state_digital(chan_d):
 
 
 # Cambios de voltaje de un canal análogico.
-# chanA tiene el formato " "Dev/aoX" "
+# chan_a tiene el formato " "Dev/aoX" "
 # Al no poder leerse el voltaje (por ser de salida), por si 
 # se necesita saber algún cambio se fuerza a que devuelva el voltaje
 
@@ -115,7 +115,7 @@ def set_voltage_analogic(chan_a, voltage):
 
 
 # Cambios de voltaje de un canal digital.
-# chanD tiene el formato " "Dev/portX/lineY" "
+# chan_d tiene el formato " "Dev/portX/lineY" "
         
 def set_voltage_digital(chan_d, voltage):
     with nidaqmx.Task() as task:
