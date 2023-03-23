@@ -8,6 +8,8 @@ uso y acceso a las carecterísticas de la DAQ, en los que destaco:
     -Cambios de voltaje de las diferentes salidas.
     -Medidas de voltaje de las diferentes entradas.
     -Temporizador.
+    -Una medición de voltaje falsa para poder testear sin necesidad de tarjeta
+    -Posibilidad de elección automáica de tarjeta con get
 
 
 @author: Julu
@@ -44,6 +46,7 @@ def daq_timer(chan_a, duration):
         
         # Se espera hasta que la tarea haya terminado de adquirir muestras.
         task.wait_until_done()
+
 
 
 # Función para que todas las líneas de salida estén a 0. 
@@ -86,9 +89,7 @@ def get_voltage_analogic(chan_a):
         # Calcular la media de los valores leídos
         mean_voltage = sum(voltages)/len(voltages)
         return mean_voltage
-    
-    
-    
+     
 
 
 # Acceso al voltaje del canal digital. 
@@ -99,6 +100,7 @@ def get_state_digital(chan_d):
         task.do_channels.add_do_chan(chan_d)
         state = task.read()
         return state
+
 
 
 # Cambios de voltaje de un canal análogico.
@@ -132,4 +134,29 @@ def safe_state(device_name):
     all_digital_safe(device_name)
     all_analogic_safe(device_name)
   
+    
+# Función que crea una instancia de la clase nidaqmx.system.System 
+# que representa el sistema local. Luego, recopila los nombres de
+# todos los dispositivos NI conectados en una lista llamada
+# connected_devices y la devuelve.
+
+def get_connected_devices():
+    system = nidaqmx.system.System.local()
+    connected_devices = [dev.name for dev in system.devices]
+    return connected_devices
+
+
+
+# Función que crea una instancia de la función get_connected_devices()
+# para comprobar que solo haya un device conectado, y, si lo hay, se
+# devuelve. 
+# Utilidad: No necesidad de interacción humana por si cambia el devicename.
+
+def get_connected_device():
+    listDev = get_connected_devices()
+    if len(listDev) == 1:
+        return listDev[0]
+    else:
+        print("Se necesita acción programativa")
+             
 
