@@ -17,6 +17,7 @@ import numpy as np
 from tkinter import ttk
 from art_daq import daq
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
+from matplotlib.figure import Figure
 
 class MIN:
 
@@ -99,7 +100,8 @@ class MIN:
     # Configura el gráfico
     def setup_plot(self):
         # Configurar el gráfico y los ejes
-        self.fig, self.ax = plt.subplots(figsize=(5, 4))
+        self.fig = Figure(figsize=(5, 4))
+        self.ax = self.fig.add_subplot(111)
         self.ax.set_title("Analog Input")
         self.ax.set_xlabel("Time (s)")
         self.ax.set_ylabel("Voltage (V)")
