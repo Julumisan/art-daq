@@ -15,7 +15,7 @@ import tkinter as tk
 import matplotlib.pyplot as plt
 import numpy as np
 from tkinter import ttk
-from art_daq import prueba
+from art_daq import daq
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
 
 class MIN:
@@ -25,7 +25,7 @@ class MIN:
             self.previous_channel = None  # Para poder cambiar la gráfica si cambio el canal
             self.setup_gui()
         finally:
-            prueba.safe_state(self.device_name)
+            daq.safe_state(self.device_name)
 
 
 
@@ -146,17 +146,17 @@ class MIN:
 
     # Actualiza la etiqueta de voltaje
     def update_voltage_label(self):
-        self.device_name = prueba.get_connected_device()
+        self.device_name = daq.get_connected_device()
         if self.device_name:
             selected_channel = self.input_channel_combobox.get()
             
-            # Comprueba si el canal seleccionado ha cambiado
+            # Comdaq si el canal seleccionado ha cambiado
             if self.previous_channel != selected_channel:
                 self.reset_plot()  # Reinicia la gráfica si el canal cambia
                 self.previous_channel = selected_channel
             
             chan_a = self.device_name + "/ai{}".format(selected_channel)
-            voltage = prueba.get_voltage_analogic(chan_a)
+            voltage = daq.get_voltage_analogic(chan_a)
             self.voltage_label.config(text="Voltage: {:.6f} V".format(voltage))
             self.update_plot(voltage)
         else:
@@ -167,35 +167,35 @@ class MIN:
         
     # Establece el voltaje de salida
     def set_output_voltage(self):
-        device_name = prueba.get_connected_device()
+        device_name = daq.get_connected_device()
         if device_name:
             # Leer el canal de salida seleccionado
             selected_channel = self.output_channel_combobox.get()
             chan_a = device_name + "/ao{}".format(selected_channel)
             voltage = float(self.spinbox.get())
-            prueba.set_voltage_analogic(chan_a, voltage)
+            daq.set_voltage_analogic(chan_a, voltage)
 
 
 
     # Establecer la salida digital
     def set_digital_output(self):
-        device_name = prueba.get_connected_device()
+        device_name = daq.get_connected_device()
         if device_name:
             selected_channel = self.digital_output_combobox.get()
             chan_d = device_name + "/" + selected_channel  # Actualizar el formato del canal
             state = self.digital_output_value.get()
-            prueba.set_voltage_digital(chan_d, state)
+            daq.set_voltage_digital(chan_d, state)
             self.update_digital_output_label()
 
 
 
     # Actualizar la etiqueta de salida digital
     def update_digital_output_label(self, event=None):
-        device_name = prueba.get_connected_device()
+        device_name = daq.get_connected_device()
         if device_name:
             selected_channel = self.digital_output_combobox.get()
             chan_d = device_name + "/" + selected_channel  # Actualizar el formato del canal
-            state = prueba.get_state_digital(chan_d)
+            state = daq.get_state_digital(chan_d)
             self.digital_output_value.set(state)
             self.digital_output_checkbutton.config(text="Output value (True/False): {}".format(state))
         else:
