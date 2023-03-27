@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 """
-Created on Tue Mar 14 12:26:46 2023
+Created on Tue Mar 7 12:26:46 2023
 
 
 Este Script va a ser el intento de librería Python de fácil
@@ -8,7 +8,6 @@ uso y acceso a las carecterísticas de la DAQ, en los que destaco:
     -Cambios de voltaje de las diferentes salidas.
     -Medidas de voltaje de las diferentes entradas.
     -Temporizador.
-    -Una medición de voltaje falsa para poder testear sin necesidad de tarjeta
     -Posibilidad de elección automática de tarjeta con get_connected_device
     -Generación de ondas cuadradas/triangulares/sinusoidales
 

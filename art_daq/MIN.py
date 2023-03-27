@@ -4,7 +4,10 @@ Created on Fri Mar 24 22:34:59 2023
 
 @author: Julu
 
-La copia del MAX, vamos
+Clase de testeo de la DAQ con iface gráfica para poder comprobar
+de manera sencilla y clara cómo está la tarjeta.
+
+TO DO: Comentar mejor antes de que se me olvide qué he hecho.
 
 """
 
@@ -23,39 +26,6 @@ class MIN:
             self.setup_gui()
         finally:
             prueba.safe_state(self.device_name)
-
-
-
-    # Actualiza la etiqueta de voltaje
-    def update_voltage_label(self):
-        self.device_name = prueba.get_connected_device()
-        if self.device_name:
-            selected_channel = self.input_channel_combobox.get()
-            
-            # Comprueba si el canal seleccionado ha cambiado
-            if self.previous_channel != selected_channel:
-                self.reset_plot()  # Reinicia la gráfica si el canal cambia
-                self.previous_channel = selected_channel
-            
-            chan_a = self.device_name + "/ai{}".format(selected_channel)
-            voltage = prueba.get_voltage_analogic(chan_a)
-            self.voltage_label.config(text="Voltage: {:.6f} V".format(voltage))
-            self.update_plot(voltage)
-        else:
-            self.voltage_label.config(text="No hay dispositivos conectados")
-        self.root.after(100, self.update_voltage_label)
-        
-        
-        
-    # Establece el voltaje de salida
-    def set_output_voltage(self):
-        device_name = prueba.get_connected_device()
-        if device_name:
-            # Leer el canal de salida seleccionado
-            selected_channel = self.output_channel_combobox.get()
-            chan_a = device_name + "/ao{}".format(selected_channel)
-            voltage = float(self.spinbox.get())
-            prueba.set_voltage_analogic(chan_a, voltage)
 
 
 
@@ -87,7 +57,7 @@ class MIN:
         output_channel_label = ttk.Label(frame, text="Select output channel:")
         output_channel_label.grid(row=4, column=0, padx=5, pady=5, sticky=tk.W)
 
-          # Salida analógica
+        # Salida analógica
         self.output_channel_combobox = ttk.Combobox(frame, values=list(range(0,2)), state="readonly", width=3)
         self.output_channel_combobox.set("0")
         self.output_channel_combobox.grid(row=4, column=1, padx=5, pady=5, sticky=tk.W)
@@ -171,6 +141,39 @@ class MIN:
         self.plot_data.set_data(self.plot_x, self.plot_y)
         self.ax.set_xlim(0, self.time_counter)
         self.canvas.draw()
+
+
+
+    # Actualiza la etiqueta de voltaje
+    def update_voltage_label(self):
+        self.device_name = prueba.get_connected_device()
+        if self.device_name:
+            selected_channel = self.input_channel_combobox.get()
+            
+            # Comprueba si el canal seleccionado ha cambiado
+            if self.previous_channel != selected_channel:
+                self.reset_plot()  # Reinicia la gráfica si el canal cambia
+                self.previous_channel = selected_channel
+            
+            chan_a = self.device_name + "/ai{}".format(selected_channel)
+            voltage = prueba.get_voltage_analogic(chan_a)
+            self.voltage_label.config(text="Voltage: {:.6f} V".format(voltage))
+            self.update_plot(voltage)
+        else:
+            self.voltage_label.config(text="No hay dispositivos conectados")
+        self.root.after(100, self.update_voltage_label)
+        
+        
+        
+    # Establece el voltaje de salida
+    def set_output_voltage(self):
+        device_name = prueba.get_connected_device()
+        if device_name:
+            # Leer el canal de salida seleccionado
+            selected_channel = self.output_channel_combobox.get()
+            chan_a = device_name + "/ao{}".format(selected_channel)
+            voltage = float(self.spinbox.get())
+            prueba.set_voltage_analogic(chan_a, voltage)
 
 
 

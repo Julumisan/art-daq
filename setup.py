@@ -2,7 +2,7 @@
 """
 Created on Fri Mar 17 13:23:56 2023
 
-@author: julu
+@author: Julu
 
 """
 
@@ -16,7 +16,10 @@ setup(
     install_requires=[
         'nidaqmx',
         'time',
-        'math'
+        'math',
+        'tkinter',
+        'matplotlib',
+        'numpy'
     ],
     
     classifiers=[

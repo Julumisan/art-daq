@@ -7,7 +7,7 @@ Created on Sat Mar 18 16:05:36 2023
 
 El archivo init.py es necesario para que Python reconozca que este es un paquete. Debe estar vacío para evitar una dependencia cíclica.
 
-Para utilizar la librería, se debe importar de la siguiente manera: "from art_daq import prueba"
+Para utilizar la librería, se debe importar de la siguiente manera: "from art_daq import daq"
 
 La siguiente es una lista de las funciones que se encuentran en este paquete:
 
