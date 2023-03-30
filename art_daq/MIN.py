@@ -46,7 +46,7 @@ class MIN:
         input_channel_label = ttk.Label(frame, text="Select input channel:")
         input_channel_label.grid(row=1, column=0, padx=5, pady=5, sticky=tk.W)
 
-        self.input_channel_combobox = ttk.Combobox(frame, values=list(range(0, 9)), state="readonly", width=3)
+        self.input_channel_combobox = ttk.Combobox(frame, values=list(range(0, 8)), state="readonly", width=3)
         self.input_channel_combobox.set("0")
         self.input_channel_combobox.grid(row=1, column=1, padx=5, pady=5, sticky=tk.W)
 
