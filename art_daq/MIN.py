@@ -7,32 +7,33 @@ Created on Fri Mar 24 22:34:59 2023
 Clase de testeo de la DAQ con iface gráfica para poder comprobar
 de manera sencilla y clara cómo está la tarjeta.
 
-TO DO: Comentar mejor antes de que se me olvide qué he hecho.
 
 """
 
 import tkinter as tk
-import matplotlib.pyplot as plt
 import numpy as np
 from tkinter import ttk
 from art_daq import daq
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
 from matplotlib.figure import Figure
+from tkinter import messagebox
 
 class MIN:
 
     def __init__(self):
+        """
+        Inicializa la aplicación y configura la interfaz gráfica de usuario, los gráficos y la comunicación con el hardware.
+        """
         try:
             self.previous_channel = None  # Para poder cambiar la gráfica si cambio el canal
             self.setup_gui()
         finally:
             daq.safe_state(self.device_name)
-
-
-
-    # Configura la interfaz gráfica de usuario
+    
     def setup_gui(self):
-        # Configurar la ventana principal y el marco
+        """
+        Configura la interfaz gráfica de usuario.
+        """
         self.root = tk.Tk()
         self.root.title("DAQ Control")
         frame = ttk.Frame(self.root, padding="10")
@@ -88,18 +89,23 @@ class MIN:
 
         set_digital_output_button = ttk.Button(frame, text="Set Digital Output", command=self.set_digital_output)
         set_digital_output_button.grid(row=6, column=1, padx=5, pady=5, sticky=tk.W)
-
+        
+        exit_button = ttk.Button(frame, text="Exit", command=self.confirm_exit, style="Red.TButton")
+        exit_button.grid(row=7, column=1, padx=5, pady=5, sticky=tk.W)
+        
+        style = ttk.Style()
+        style.configure("Red.TButton", foreground="red")
+    
         self.update_digital_output_label()
         
         # Iniciar la actualización de la etiqueta de voltaje y el bucle principal
         self.root.after(1000, self.update_voltage_label)
         self.root.mainloop()
-
-
         
-    # Configura el gráfico
     def setup_plot(self):
-        # Configurar el gráfico y los ejes
+        """
+        Configura el gráfico y los ejes.
+        """
         self.fig = Figure(figsize=(5, 4))
         self.ax = self.fig.add_subplot(111)
         self.ax.set_title("Analog Input")
@@ -110,16 +116,18 @@ class MIN:
         self.plot_x = np.array([])
         self.plot_y = np.array([])
         self.time_counter = 0
-        
-
-
-    # Actualizar la gráfica
+    
     def update_plot(self, voltage):
-        # Agregar nuevos datos al gráfico y actualizar
+        """
+        Agrega nuevos datos al gráfico y lo actualiza.
+        
+        Args:
+            voltage (float): Voltaje a cambiar.
+        """
         self.plot_x = np.append(self.plot_x, self.time_counter)
         self.plot_y = np.append(self.plot_y, voltage)
         self.time_counter += 0.1
-    
+        
         self.plot_data.set_data(self.plot_x, self.plot_y)
         
         # Si el tiempo actual es mayor a 10 segundos
@@ -132,43 +140,43 @@ class MIN:
         self.ax.relim()  # Recalcular los límites de los datos en el eje y
         self.ax.autoscale_view(True, True, True)  # Autoajustar el eje y
         self.canvas.draw()
-        
-        
-        
-    # Reiniciar la gráfica
+    
     def reset_plot(self):
+        """
+        Reinicia el gráfico.
+        """
         self.plot_x = np.array([])
         self.plot_y = np.array([])
         self.time_counter = 0
         self.plot_data.set_data(self.plot_x, self.plot_y)
         self.ax.set_xlim(0, self.time_counter)
         self.canvas.draw()
-
-
-
-    # Actualiza la etiqueta de voltaje
+    
     def update_voltage_label(self):
+        """
+        Actualiza la etiqueta de voltaje.
+        """
         self.device_name = daq.get_connected_device()
         if self.device_name:
-            selected_channel = self.input_channel_combobox.get()
-            
-            # Comdaq si el canal seleccionado ha cambiado
-            if self.previous_channel != selected_channel:
-                self.reset_plot()  # Reinicia la gráfica si el canal cambia
-                self.previous_channel = selected_channel
-            
-            chan_a = self.device_name + "/ai{}".format(selected_channel)
-            voltage = daq.get_voltage_analogic(chan_a)
-            self.voltage_label.config(text="Voltage: {:.6f} V".format(voltage))
-            self.update_plot(voltage)
+           selected_channel = self.input_channel_combobox.get()
+           
+           # Comdaq si el canal seleccionado ha cambiado
+           if self.previous_channel != selected_channel:
+               self.reset_plot()  # Reinicia la gráfica si el canal cambia
+               self.previous_channel = selected_channel
+           
+           chan_a = self.device_name + "/ai{}".format(selected_channel)
+           voltage = daq.get_voltage_analogic(chan_a)
+           self.voltage_label.config(text="Voltage: {:.6f} V".format(voltage))
+           self.update_plot(voltage)
         else:
-            self.voltage_label.config(text="No hay dispositivos conectados")
+           self.voltage_label.config(text="No hay dispositivos conectados")
         self.root.after(100, self.update_voltage_label)
-        
-        
-        
-    # Establece el voltaje de salida
+    
     def set_output_voltage(self):
+        """
+        Establece el voltaje de salida.
+        """
         device_name = daq.get_connected_device()
         if device_name:
             # Leer el canal de salida seleccionado
@@ -176,11 +184,11 @@ class MIN:
             chan_a = device_name + "/ao{}".format(selected_channel)
             voltage = float(self.spinbox.get())
             daq.set_voltage_analogic(chan_a, voltage)
-
-
-
-    # Establecer la salida digital
+    
     def set_digital_output(self):
+        """
+        Establece la salida digital.
+        """
         device_name = daq.get_connected_device()
         if device_name:
             selected_channel = self.digital_output_combobox.get()
@@ -188,11 +196,11 @@ class MIN:
             state = self.digital_output_value.get()
             daq.set_voltage_digital(chan_d, state)
             self.update_digital_output_label()
-
-
-
-    # Actualizar la etiqueta de salida digital
+    
     def update_digital_output_label(self, event=None):
+        """
+        Actualiza la etiqueta de salida digital.
+        """
         device_name = daq.get_connected_device()
         if device_name:
             selected_channel = self.digital_output_combobox.get()
@@ -203,6 +211,10 @@ class MIN:
         else:
             self.digital_output_checkbutton.config(text="Output value (True/False): --")
             
-
+            
+    def confirm_exit(self):
+        if messagebox.askyesno("Exit", "Are you sure you want to exit?"):
+            self.root.destroy()        
+            
 if __name__ == "__main__":
     min_app = MIN()
