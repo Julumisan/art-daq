@@ -26,6 +26,7 @@ Además de estas funciones, también se incluyen las funciones para generar señ
         los parámetros. El parámetro opcional "steps" especifica la cantidad de pasos en cada rampa de la señal triangular.
 
 The following is a list of functions found in this package:
+
     get_voltage_analogic(chan_a): reads the current voltage of the specified analog channel in the chan_a parameter.
     get_state_digital(chan_d): reads the current state of the specified digital channel in the chan_d parameter.
     set_voltage_analogic(chan_a, voltage): sets the voltage of the specified analog channel in the chan_a parameter to the value specified in the voltage parameter (float).
@@ -37,6 +38,7 @@ The following is a list of functions found in this package:
 
 
 In addition to these functions, the following functions for generating signals are also included:
+
     generate_sine_wave(device_name, ao_channel, frequency, amplitude, duration): generates a sine wave signal with the specified frequency, amplitude, and duration in the parameters.
     generate_square_wave(device_name, ao_channel, frequency, amplitude, duration): generates a square wave signal with the specified frequency, amplitude, and duration in the parameters.
     generate_triangle_wave(device_name, ao_channel, frequency, amplitude, duration, steps=100): generates a triangle wave signal with the specified frequency, amplitude, and duration in
