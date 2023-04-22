@@ -3,8 +3,8 @@ Librería dedicada al uso de la tarjeta USB-6001. Se pretende que sea una librer
 Library dedicated to the use of the USB-6001 daq. It is intended to be a simple and accessible library.  
 
 La instalación de este paquete se puede realizar a través del comando pip install art-daq. Si se necesita actualizarla, se usará el comando pip install --upgrade art-daq. 
-Para poder usar este paquete se usará la estructura "from art_daq import prueba". 
-The installation of this package can be done through the pip install art-daq command. If you need to upgrade it, use the command pip install --upgrade art-daq. 
+Para poder usar este paquete se usará la estructura "from art_daq import prueba".   
+The installation of this package can be done through the pip install art-daq command. If you need to upgrade it, use the command pip install --upgrade art-daq.   
 In order to use this package the structure "from art_daq import prueba" will be used.
 
 La siguiente es una lista de las funciones que se encuentran en este paquete:
