@@ -3,8 +3,8 @@ Librería dedicada al uso de la tarjeta USB-6001. Se pretende que sea una librer
 Library dedicated to the use of the USB-6001 daq. It is intended to be a simple and accessible library.  
 
 La instalación de este paquete se puede realizar a través del comando pip install art-daq. Si se necesita actualizarla, se usará el comando pip install --upgrade art-daq. 
-Para poder usar este paquete se usará la estructura "from art_daq import prueba". 
-The installation of this package can be done through the pip install art-daq command. If you need to upgrade it, use the command pip install --upgrade art-daq. 
+Para poder usar este paquete se usará la estructura "from art_daq import prueba".   
+The installation of this package can be done through the pip install art-daq command. If you need to upgrade it, use the command pip install --upgrade art-daq.   
 In order to use this package the structure "from art_daq import prueba" will be used.
 
 La siguiente es una lista de las funciones que se encuentran en este paquete:
@@ -26,6 +26,7 @@ Además de estas funciones, también se incluyen las funciones para generar señ
         los parámetros. El parámetro opcional "steps" especifica la cantidad de pasos en cada rampa de la señal triangular.
 
 The following is a list of functions found in this package:
+
     get_voltage_analogic(chan_a): reads the current voltage of the specified analog channel in the chan_a parameter.
     get_state_digital(chan_d): reads the current state of the specified digital channel in the chan_d parameter.
     set_voltage_analogic(chan_a, voltage): sets the voltage of the specified analog channel in the chan_a parameter to the value specified in the voltage parameter (float).
@@ -37,6 +38,7 @@ The following is a list of functions found in this package:
 
 
 In addition to these functions, the following functions for generating signals are also included:
+
     generate_sine_wave(device_name, ao_channel, frequency, amplitude, duration): generates a sine wave signal with the specified frequency, amplitude, and duration in the parameters.
     generate_square_wave(device_name, ao_channel, frequency, amplitude, duration): generates a square wave signal with the specified frequency, amplitude, and duration in the parameters.
     generate_triangle_wave(device_name, ao_channel, frequency, amplitude, duration, steps=100): generates a triangle wave signal with the specified frequency, amplitude, and duration in
