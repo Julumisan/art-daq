@@ -14,7 +14,7 @@ uso y acceso a las carecterísticas de la DAQ, en los que destaco:
 
 @author: Julu
 
-@version: v1.0.1
+@version: v1.1.2
 
 Esta nueva versión cuenta con todas las funcionalidades previstas, comentarios
 aclaratorios acerca del uso de las funciones, tanto de su función como de 
@@ -200,9 +200,12 @@ def set_voltage_digital(chan_d: str, voltage: bool) -> None:
     Cambios de voltaje de un canal digital.
     chan_d tiene el formato " "Dev/portX/lineY" "
     
-    
-    @param chan_d: el identificador del canal digital de salida, en el formato "Dev/portX/lineY".
-    @param voltage: el estado a establecer en el canal digital de salida (True para encender, False para apagar).
+    Args:
+        chan_d: el identificador del canal digital de salida, en el formato "Dev/portX/lineY".
+        voltage: el estado a establecer en el canal digital de salida (True para encender, False para apagar).
+    Returns:
+        None
+        
     """   
     with nidaqmx.Task() as task:
         task.do_channels.add_do_chan(chan_d) # Especificar la salida digital X.Y del dispositivo DAQ

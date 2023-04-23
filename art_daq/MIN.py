@@ -7,7 +7,7 @@ Created on Fri Mar 24 22:34:59 2023
 Clase de testeo de la DAQ con iface gráfica para poder comprobar
 de manera sencilla y clara cómo está la tarjeta.
 
-
+v1.1.2
 """
 
 import tkinter as tk
@@ -56,7 +56,7 @@ class MIN:
         self.spinbox = ttk.Spinbox(frame, from_=0, to=5, increment=0.01, width=10)
         self.spinbox.grid(row=2, column=1, padx=5, pady=5, sticky=tk.W)
 
-        output_channel_label = ttk.Label(frame, text="Select output channel:")
+        output_channel_label = ttk.Label(frame, text="Select analog output channel:")
         output_channel_label.grid(row=4, column=0, padx=5, pady=5, sticky=tk.W)
 
         # Salida analógica
@@ -64,7 +64,7 @@ class MIN:
         self.output_channel_combobox.set("0")
         self.output_channel_combobox.grid(row=4, column=1, padx=5, pady=5, sticky=tk.W)
 
-        set_voltage_button = ttk.Button(frame, text="Set Voltage", command=self.set_output_voltage)
+        set_voltage_button = ttk.Button(frame, text="Set Analog Voltage", command=self.set_output_voltage)
         set_voltage_button.grid(row=3, column=1, padx=5, pady=5, sticky=tk.W)
 
         # Configurar el gráfico y el canvas
@@ -84,7 +84,7 @@ class MIN:
         self.digital_output_combobox.bind("<<ComboboxSelected>>", self.update_digital_output_label)
 
         self.digital_output_value = tk.BooleanVar()
-        self.digital_output_checkbutton = tk.Checkbutton(frame, text="Output value (True/False)", variable=self.digital_output_value)
+        self.digital_output_checkbutton = tk.Checkbutton(frame, text="Digital output value (True/False)", variable=self.digital_output_value)
         self.digital_output_checkbutton.grid(row=6, column=0, padx=5, pady=5, sticky=tk.W)
 
         set_digital_output_button = ttk.Button(frame, text="Set Digital Output", command=self.set_digital_output)
