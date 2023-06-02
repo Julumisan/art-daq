@@ -17,6 +17,7 @@ from art_daq import daq
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
 from matplotlib.figure import Figure
 from tkinter import messagebox
+import pyvisa as visa
 
 class MIN:
 
@@ -26,6 +27,7 @@ class MIN:
         """
         try:
             self.previous_channel = None  # Para poder cambiar la gráfica si cambio el canal
+            self.encontrar_dispositivos_visa()
             self.setup_gui()
         finally:
             daq.safe_state(self.device_name)
@@ -36,8 +38,31 @@ class MIN:
         """
         self.root = tk.Tk()
         self.root.title("DAQ Control")
-        frame = ttk.Frame(self.root, padding="10")
-        frame.grid(row=0, column=0, sticky=(tk.W, tk.E, tk.N, tk.S))
+        notebook = ttk.Notebook(self.root)
+        notebook.grid(row=0, column=0, padx=10, pady=10)
+        
+        frame = ttk.Frame(notebook)
+        frame2 = ttk.Frame(notebook)
+        frame3 = ttk.Frame(notebook)
+        
+        notebook.add(frame, text="Control")
+        notebook.add(frame2, text="Osciloscopio SCPI")
+        notebook.add(frame3, text="Multimetro SCPI")
+        
+        # Frame 2 (Text Box)
+        text_box = tk.Text(frame2)
+        text_box.grid(row=0, column=0, padx=10, pady=10)
+        
+        # Frame 3 (Text Box)
+        text_box = tk.Text(frame3)
+        text_box.grid(row=0, column=0, padx=10, pady=10)
+        
+        save_button = ttk.Button(frame2, text="Send Command", command=lambda: self.save_text(text_box))
+        save_button.grid(row=1, column=0, padx=10, pady=10)
+        
+        save_button = ttk.Button(frame3, text="Send Command", command=lambda: self.save_text_mult(text_box))
+        save_button.grid(row=1, column=0, padx=10, pady=10)
+                
 
         # Configurar los widgets
         self.voltage_label = ttk.Label(frame, text="Voltage: -- V")
@@ -210,6 +235,61 @@ class MIN:
             self.digital_output_checkbutton.config(text="Output value (True/False): {}".format(state))
         else:
             self.digital_output_checkbutton.config(text="Output value (True/False): --")
+            
+            
+    def SCPI_communications(self):
+        print("noquiero ident")
+        
+        
+    def encontrar_dispositivos_visa(self):
+        rm = visa.ResourceManager()
+        dispositivos = rm.list_resources()
+        print(dispositivos)
+        visa_devices = []
+        for dispositivo in dispositivos:
+            try:
+                recurso = rm.open_resource(dispositivo)
+                if recurso.resource_name.startswith('USB'):
+                    visa_devices.append(dispositivo)
+                    recurso.close()
+                else:
+                    self.multimetro = recurso
+            except visa.VisaIOError:
+                pass                  
+        self.obtener_info_dispositivos_visa(visa_devices)
+        return visa_devices
+    
+    # Obtener información de los dispositivos Visa
+    def obtener_info_dispositivos_visa(self, visa_devices):
+        rm = visa.ResourceManager()
+        for device in visa_devices:
+            
+            resource = rm.open_resource(device)
+            try:
+                
+                description = resource.query("*IDN?")
+                print("Dispositivo Visa encontrado:")
+                print(f"  Descripción: {description.strip()}")
+                print(f"  Dirección: {device}")
+                print("")   
+                
+                if "MSO" in description:
+                    self.osciloscopio = resource
+            except visa.VisaIOError:
+                pass
+                
+                
+                
+
+                
+    def save_text(self, text_box):
+        self.text = text_box.get("1.0", tk.END).strip()  # Obtener el texto del cuadro de texto
+        self.osciloscopio.write(self.text)
+        
+        
+    def save_text_mult(self, text_box):
+        self.text = text_box.get("1.0", tk.END).strip()  # Obtener el texto del cuadro de texto
+        self.multimetro.write(self.text)
             
             
     def confirm_exit(self):
