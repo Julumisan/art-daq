@@ -10,13 +10,14 @@ from setuptools import setup
 
 setup(
     name='art-daq',
-    version='1.1.2',
+    version='2.0.1',
     description='Paquete para usar la tarjeta de NI, USB-6001',
     packages=['art_daq'],
     install_requires=[
         'nidaqmx',
         'matplotlib',
-        'numpy'
+        'numpy',
+        'pyvisa'
     ],
     
     classifiers=[

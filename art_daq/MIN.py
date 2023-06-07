@@ -27,7 +27,7 @@ class MIN:
         """
         try:
             self.previous_channel = None  # Para poder cambiar la gráfica si cambio el canal
-            self.encontrar_dispositivos_visa()
+            self.find_visa_devices()
             self.setup_gui()
         finally:
             daq.safe_state(self.device_name)
@@ -37,17 +37,23 @@ class MIN:
         Configura la interfaz gráfica de usuario.
         """
         self.root = tk.Tk()
-        self.root.title("DAQ Control")
+        self.root.title("MIN")
+        # Expansion
+        self.root.rowconfigure(1, weight=1)
+        self.root.columnconfigure(1, weight=1)
         notebook = ttk.Notebook(self.root)
         notebook.grid(row=0, column=0, padx=10, pady=10)
         
         frame = ttk.Frame(notebook)
         frame2 = ttk.Frame(notebook)
         frame3 = ttk.Frame(notebook)
+        frame4 = ttk.Frame(notebook)
         
         notebook.add(frame, text="Control")
         notebook.add(frame2, text="Osciloscopio SCPI")
         notebook.add(frame3, text="Multimetro SCPI")
+        notebook.add(frame4, text="Señales")
+        
         
         # Frame 2 (Text Box)
         text_box = tk.Text(frame2)
@@ -56,6 +62,47 @@ class MIN:
         # Frame 3 (Text Box)
         text_box = tk.Text(frame3)
         text_box.grid(row=0, column=0, padx=10, pady=10)
+
+        
+        # Combobox para elegir la salida de señal
+        tipos = ["Square Wave", "Triangular Wave", "Sinusoidal Wave"]
+        
+        self.signal_combobox = ttk.Combobox(frame4, values=tipos, state="readonly")
+        self.signal_combobox.set(tipos[0])
+        self.signal_combobox.grid(row=6, column=0, padx=5, pady=5, sticky=tk.W)
+        
+        # Salida analógica
+        
+        output_channel_label_frame4 = ttk.Label(frame4, text="Select analog output channel:", font=("", 13))
+        output_channel_label_frame4.grid(row=2, column=0, padx=5, pady=5, sticky=tk.W)
+        options_frame4 = ttk.Label(frame4, text="Necessary options for the creation of the waves: ", font=("Times New Roman Black", 16))
+        options_frame4.grid(row=0, column=0, padx=5, pady=5, sticky=tk.W)
+        self.output_channel_combobox_frame4 = ttk.Combobox(frame4, values=list(range(0,2)), state="readonly", width=3)
+        self.output_channel_combobox_frame4.set("0")
+        self.output_channel_combobox_frame4.grid(row=2, column=1, padx=5, pady=5, sticky=tk.W)
+        
+        freq_label = ttk.Label(frame4, text="Frequency [Hz]: ", font=("", 13))
+        freq_label.grid(row=3, column=0, padx=5, pady=5, sticky=tk.W)
+        self.text_box_freq = tk.Entry(frame4)
+        self.text_box_freq.grid(row=3, column=1, padx=10, pady=1, sticky=tk.E)
+        
+        amp_label = ttk.Label(frame4, text="Amplitude [V] (0-5): ", font=("", 13))
+        amp_label.grid(row=4, column=0, padx=5, pady=5, sticky=tk.W)
+        self.text_box_amp = tk.Entry(frame4)
+        self.text_box_amp.grid(row=4, column=1, padx=10, pady=10, sticky=tk.E)
+        
+        dur_label = ttk.Label(frame4, text="Duration [s]: ", font=("", 13))
+        dur_label.grid(row=5, column=0, padx=5, pady=5, sticky=tk.W)
+        self.text_box_dur = tk.Entry(frame4)
+        self.text_box_dur.grid(row=5, column=1, padx=10, pady=10, sticky=tk.E)
+        
+        activate_button = ttk.Button(frame4, text="Activar señal", command=lambda: self.activate_signal())
+        activate_button.grid(row=6, column=1, padx=10, pady=10)
+        
+        
+        # Final Frame 4
+        
+
         
         save_button = ttk.Button(frame2, text="Send Command", command=lambda: self.save_text(text_box))
         save_button.grid(row=1, column=0, padx=10, pady=10)
@@ -78,7 +125,7 @@ class MIN:
         spinbox_label = ttk.Label(frame, text="Output voltage (0-5V):")
         spinbox_label.grid(row=2, column=0, padx=5, pady=5, sticky=tk.W)
 
-        self.spinbox = ttk.Spinbox(frame, from_=0, to=5, increment=0.01, width=10)
+        self.spinbox = ttk.Spinbox(frame, from_=0, to=5, increment=0.1, width=10)
         self.spinbox.grid(row=2, column=1, padx=5, pady=5, sticky=tk.W)
 
         output_channel_label = ttk.Label(frame, text="Select analog output channel:")
@@ -89,7 +136,7 @@ class MIN:
         self.output_channel_combobox.set("0")
         self.output_channel_combobox.grid(row=4, column=1, padx=5, pady=5, sticky=tk.W)
 
-        set_voltage_button = ttk.Button(frame, text="Set Analog Voltage", command=self.set_output_voltage)
+        set_voltage_button = ttk.Button(frame, text="Set Analog Voltage", command=self.check_digital_input_state)
         set_voltage_button.grid(row=3, column=1, padx=5, pady=5, sticky=tk.W)
 
         # Configurar el gráfico y el canvas
@@ -108,6 +155,8 @@ class MIN:
         self.digital_output_combobox.grid(row=5, column=1, padx=5, pady=5, sticky=tk.W)
         self.digital_output_combobox.bind("<<ComboboxSelected>>", self.update_digital_output_label)
 
+
+
         self.digital_output_value = tk.BooleanVar()
         self.digital_output_checkbutton = tk.Checkbutton(frame, text="Digital output value (True/False)", variable=self.digital_output_value)
         self.digital_output_checkbutton.grid(row=6, column=0, padx=5, pady=5, sticky=tk.W)
@@ -115,8 +164,34 @@ class MIN:
         set_digital_output_button = ttk.Button(frame, text="Set Digital Output", command=self.set_digital_output)
         set_digital_output_button.grid(row=6, column=1, padx=5, pady=5, sticky=tk.W)
         
+        
+        
+                
+        digital_input_label = ttk.Label(frame, text="Select digital input channel:")
+        digital_input_label.grid(row=7, column=0, padx=5, pady=5, sticky=tk.W)
+        
+        # Generar una lista de opciones para el Combobox en el formato "portX/lineY"
+        digital_input_options = [f"port{p}/line{l}" for p in range(3) for l in range(8 if p == 0 else (4 if p == 1 else 1))]
+        
+        self.digital_input_combobox = ttk.Combobox(frame, values=digital_input_options, state="readonly", width=15)
+        self.digital_input_combobox.set("port0/line0")  # Establecer el valor predeterminado en "port0/line0"
+        self.digital_input_combobox.grid(row=7, column=1, padx=5, pady=5, sticky=tk.W)
+        
+        self.digital_input_indicator = tk.Label(frame, text="", width=2, bg="red")
+        self.digital_input_indicator.grid(row=7, column=2, padx=5, pady=5, sticky=tk.W)
+        
+        self.digital_input_value = tk.StringVar()
+        self.digital_input_check = tk.Label(frame, text="Digital input value:", textvariable=self.digital_input_value)
+        self.digital_input_check.grid(row=8, column=0, padx=5, pady=5, sticky=tk.W)
+        
+        set_digital_input_button = ttk.Button(frame, text="Set Digital Input", command=self.check_digital_input_state)
+        set_digital_input_button.grid(row=9, column=1, padx=5, pady=5, sticky=tk.W)
+
+
+        
+        
         exit_button = ttk.Button(frame, text="Exit", command=self.confirm_exit, style="Red.TButton")
-        exit_button.grid(row=7, column=1, padx=5, pady=5, sticky=tk.W)
+        exit_button.grid(row=10, column=1, padx=5, pady=5, sticky=tk.W)
         
         style = ttk.Style()
         style.configure("Red.TButton", foreground="red")
@@ -131,7 +206,7 @@ class MIN:
         """
         Configura el gráfico y los ejes.
         """
-        self.fig = Figure(figsize=(5, 4))
+        self.fig = Figure()
         self.ax = self.fig.add_subplot(111)
         self.ax.set_title("Analog Input")
         self.ax.set_xlabel("Time (s)")
@@ -237,11 +312,27 @@ class MIN:
             self.digital_output_checkbutton.config(text="Output value (True/False): --")
             
             
+    def check_digital_input_state(self):
+        """
+        Checkea el input de la entrada del combobox.
+        """
+        device_name = daq.get_connected_device()
+        if device_name:
+            selected_channel = self.digital_input_combobox.get()
+            chan_d = device_name + "/" + selected_channel  # Actualizar el formato del canal
+            state = daq.read_digital_input(chan_d)
+            if state:
+                self.digital_input_indicator.config(bg="green")
+            else:
+                self.digital_input_indicator.config(bg="red")
+
+   
+            
     def SCPI_communications(self):
         print("noquiero ident")
         
         
-    def encontrar_dispositivos_visa(self):
+    def find_visa_devices(self):
         rm = visa.ResourceManager()
         dispositivos = rm.list_resources()
         print(dispositivos)
@@ -256,11 +347,11 @@ class MIN:
                     self.multimetro = recurso
             except visa.VisaIOError:
                 pass                  
-        self.obtener_info_dispositivos_visa(visa_devices)
+        self.get_info_visa_devices(visa_devices)
         return visa_devices
     
     # Obtener información de los dispositivos Visa
-    def obtener_info_dispositivos_visa(self, visa_devices):
+    def get_info_visa_devices(self, visa_devices):
         rm = visa.ResourceManager()
         for device in visa_devices:
             
@@ -279,7 +370,6 @@ class MIN:
                 pass
                 
                 
-                
 
                 
     def save_text(self, text_box):
@@ -290,6 +380,56 @@ class MIN:
     def save_text_mult(self, text_box):
         self.text = text_box.get("1.0", tk.END).strip()  # Obtener el texto del cuadro de texto
         self.multimetro.write(self.text)
+        
+        
+        
+
+
+    def activate_signal(self):
+        selected_index = self.signal_combobox.current()
+        ao_channel = self.output_channel_combobox_frame4.current()
+        frequency = self.text_box_freq.get()
+        amplitude = self.text_box_amp.get()
+        duration = self.text_box_dur.get()
+    
+        if not (frequency.isnumeric() and amplitude.isnumeric() and duration.isnumeric()):
+            messagebox.showerror("Error", "Please, check that everything is filled with valid numbers")
+            return
+    
+        frequency = float(frequency)
+        amplitude = float(amplitude)
+        duration = float(duration)
+    
+        if frequency < 0:
+            messagebox.showerror("Error", "Negative frequency is not allowed")
+            return
+    
+        if amplitude < 0:
+            messagebox.showerror("Error", "Negative amplitude is not allowed")
+            return
+    
+        if duration < 0:
+            messagebox.showerror("Error", "Negative duration is not allowed")
+            return
+    
+        if amplitude > 5:
+            messagebox.showerror("Error", "Amplitude should be less than or equal to 5")
+            return
+        
+        # Si no se produjeron errores, se ejecuta el código relacionado con selected_index
+        if selected_index == 0:
+            # Ejecutar el método asociado a la opción "Onda Cuadrada"
+            daq.generate_square_wave(self.device_name, ao_channel, frequency, amplitude, duration)
+            print("a")
+        elif selected_index == 1:
+            # Ejecutar el método asociado a la opción "Onda Triangular"     
+            daq.generate_triangle_wave(self.device_name, ao_channel, frequency, amplitude, duration)
+            print("b")
+        elif selected_index == 2:
+            # Ejecutar el método asociado a la opción "Onda Sinusoidal"
+            daq.generate_sine_wave(self.device_name, ao_channel, frequency, amplitude, duration)
+            print("c")
+            
             
             
     def confirm_exit(self):

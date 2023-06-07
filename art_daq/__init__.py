@@ -3,7 +3,7 @@
 Created on Sat Mar 18 16:05:36 2023
 
 @author: Julu
-@version: 1.1.2
+@version: 2.0.1
 
 El archivo init.py es necesario para que Python reconozca que este es un paquete. Debe estar vacío para evitar una dependencia cíclica.
 
@@ -19,6 +19,7 @@ La siguiente es una lista de las funciones que se encuentran en este paquete:
     all_digital_safe(device_name): establece todas las líneas de salida a False.
     all_analogic_safe(device_name): configura todos los canales analógicos de salida a 0V.
     safe_state(device_name): establece un voltaje seguro en todas las salidas.
+    read_digital_input(chan_d): lee el estado de un canal digital de entrada.
 
 Además de estas funciones, también se incluyen las funciones para generar señales:
 
