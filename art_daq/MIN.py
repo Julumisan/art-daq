@@ -7,7 +7,7 @@ Created on Fri Mar 24 22:34:59 2023
 Clase de testeo de la DAQ con iface gráfica para poder comprobar
 de manera sencilla y clara cómo está la tarjeta.
 
-v1.1.2
+v2.0.1
 """
 
 import tkinter as tk
