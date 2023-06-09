@@ -60,8 +60,8 @@ class MIN:
         text_box.grid(row=0, column=0, padx=10, pady=10)
         
         # Frame 3 (Text Box)
-        text_box = tk.Text(frame3)
-        text_box.grid(row=0, column=0, padx=10, pady=10)
+        text_box2 = tk.Text(frame3)
+        text_box2.grid(row=0, column=0, padx=10, pady=10)
 
         
         # Combobox para elegir la salida de señal
@@ -107,8 +107,8 @@ class MIN:
         save_button = ttk.Button(frame2, text="Send Command", command=lambda: self.save_text(text_box))
         save_button.grid(row=1, column=0, padx=10, pady=10)
         
-        save_button = ttk.Button(frame3, text="Send Command", command=lambda: self.save_text_mult(text_box))
-        save_button.grid(row=1, column=0, padx=10, pady=10)
+        save_button2 = ttk.Button(frame3, text="Send Command", command=lambda: self.save_text_mult(text_box2))
+        save_button2.grid(row=1, column=0, padx=10, pady=10)
                 
 
         # Configurar los widgets
@@ -136,7 +136,7 @@ class MIN:
         self.output_channel_combobox.set("0")
         self.output_channel_combobox.grid(row=4, column=1, padx=5, pady=5, sticky=tk.W)
 
-        set_voltage_button = ttk.Button(frame, text="Set Analog Voltage", command=self.check_digital_input_state)
+        set_voltage_button = ttk.Button(frame, text="Set Analog Voltage", command=self.set_output_voltage)
         set_voltage_button.grid(row=3, column=1, padx=5, pady=5, sticky=tk.W)
 
         # Configurar el gráfico y el canvas
@@ -344,7 +344,7 @@ class MIN:
                     visa_devices.append(dispositivo)
                     recurso.close()
                 else:
-                    self.multimetro = recurso
+                    pass
             except visa.VisaIOError:
                 pass                  
         self.get_info_visa_devices(visa_devices)
@@ -365,7 +365,11 @@ class MIN:
                 print("")   
                 
                 if "MSO" in description:
+                    print("Creo que soy un Osci")
                     self.osciloscopio = resource
+                if "PRO" in description:
+                    print("Creo que soy un multimetro")
+                    self.multimetro = resource
             except visa.VisaIOError:
                 pass
                 
@@ -377,9 +381,11 @@ class MIN:
         self.osciloscopio.write(self.text)
         
         
-    def save_text_mult(self, text_box):
-        self.text = text_box.get("1.0", tk.END).strip()  # Obtener el texto del cuadro de texto
-        self.multimetro.write(self.text)
+    def save_text_mult(self, text_box2):
+        self.text2 = text_box2.get("1.0", tk.END).strip()  # Obtener el texto del cuadro de texto
+        print("Envio el command: " + self.text2)
+        print(self.osciloscopio)
+        self.multimetro.query(self.text2)
         
         
         
