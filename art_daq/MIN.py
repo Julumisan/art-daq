@@ -12,6 +12,9 @@ v2.0.1
 
 import tkinter as tk
 import numpy as np
+import threading
+import time
+import nidaqmx
 from tkinter import ttk
 from art_daq import daq
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
@@ -49,19 +52,29 @@ class MIN:
         frame3 = ttk.Frame(notebook)
         frame4 = ttk.Frame(notebook)
         
-        notebook.add(frame, text="Control")
+        notebook.add(frame, text="I/O DAQ")
         notebook.add(frame2, text="Osciloscopio SCPI")
         notebook.add(frame3, text="Multimetro SCPI")
         notebook.add(frame4, text="Señales")
         
-        
         # Frame 2 (Text Box)
+        frame2.columnconfigure(0, weight=10)
         text_box = tk.Text(frame2)
+        text_box.config(height=10)
         text_box.grid(row=0, column=0, padx=10, pady=10)
+        # Respuesta
+        script_text_box = tk.Text(frame2, state='disabled')
+        script_text_box.config(height=10)
+        script_text_box.grid(row=1, column=0, padx=10, pady=10, columnspan=2)
         
         # Frame 3 (Text Box)
         text_box2 = tk.Text(frame3)
+        text_box2.config(height=10)
         text_box2.grid(row=0, column=0, padx=10, pady=10)
+        # Respuesta
+        script_text_box2 = tk.Text(frame3, state='disabled')
+        script_text_box2.config(height=10)
+        script_text_box2.grid(row=1, column=0, padx=10, pady=10, columnspan=2)
 
         
         # Combobox para elegir la salida de señal
@@ -105,10 +118,10 @@ class MIN:
 
         
         save_button = ttk.Button(frame2, text="Send Command", command=lambda: self.save_text(text_box))
-        save_button.grid(row=1, column=0, padx=10, pady=10)
+        save_button.grid(row=2, column=0, padx=10, pady=10)
         
         save_button2 = ttk.Button(frame3, text="Send Command", command=lambda: self.save_text_mult(text_box2))
-        save_button2.grid(row=1, column=0, padx=10, pady=10)
+        save_button2.grid(row=2, column=0, padx=10, pady=10)
                 
 
         # Configurar los widgets
@@ -257,22 +270,30 @@ class MIN:
         Actualiza la etiqueta de voltaje.
         """
         self.device_name = daq.get_connected_device()
-        if self.device_name:
-           selected_channel = self.input_channel_combobox.get()
-           
-           # Comdaq si el canal seleccionado ha cambiado
-           if self.previous_channel != selected_channel:
-               self.reset_plot()  # Reinicia la gráfica si el canal cambia
-               self.previous_channel = selected_channel
-           
-           chan_a = self.device_name + "/ai{}".format(selected_channel)
-           voltage = daq.get_voltage_analogic(chan_a)
-           self.voltage_label.config(text="Voltage: {:.6f} V".format(voltage))
-           self.update_plot(voltage)
-        else:
-           self.voltage_label.config(text="No hay dispositivos conectados")
-        self.root.after(100, self.update_voltage_label)
+        try:
+            if self.device_name:
+               selected_channel = self.input_channel_combobox.get()
     
+               # Comdaq si el canal seleccionado ha cambiado
+               if self.previous_channel != selected_channel:
+                   self.reset_plot()  # Reinicia la gráfica si el canal cambia
+                   self.previous_channel = selected_channel
+    
+               chan_a = self.device_name + "/ai{}".format(selected_channel)
+               voltage = daq.get_voltage_analogic(chan_a)
+               self.voltage_label.config(text="Voltage: {:.6f} V".format(voltage))
+               self.update_plot(voltage)
+               # print(self.check_thread.is_alive())
+               self.root.after(100, self.update_voltage_label)
+            else:
+                self.voltage_label.config(text="No hay dispositivos conectados")
+                self.start_check_thread()
+                print(self.check_thread.is_alive())
+        except nidaqmx.errors.DaqError as e:
+            self.check_device_name()
+            print("error", e)
+        
+
     def set_output_voltage(self):
         """
         Establece el voltaje de salida.
@@ -327,7 +348,7 @@ class MIN:
                 self.digital_input_indicator.config(bg="red")
 
    
-            
+     # Cambiar estos tres, ya tengo experiencia, puedo hacerlo mejor       
     def SCPI_communications(self):
         print("noquiero ident")
         
@@ -436,6 +457,18 @@ class MIN:
             daq.generate_sine_wave(self.device_name, ao_channel, frequency, amplitude, duration)
             print("c")
             
+    def check_device_name(self):
+        while self.device_name is None:
+            self.device_name = daq.get_connected_device()
+            time.sleep(2)
+        self.update_voltage_label()
+        
+    # Hilos
+    def start_check_thread(self):
+        print("Entro al hilo")
+        self.check_thread = threading.Thread(target=self.check_device_name)
+        self.check_thread.daemon = True  # Hilo se ejecutará en segundo plano idealmente
+        self.check_thread.start()
             
             
     def confirm_exit(self):
