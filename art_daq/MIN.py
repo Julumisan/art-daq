@@ -29,11 +29,17 @@ class MIN:
         Inicializa la aplicación y configura la interfaz gráfica de usuario, los gráficos y la comunicación con el hardware.
         """
         try:
+            self.osciloscopio = None
+            self.multimetro = None
+            self.count = 0
             self.previous_channel = None  # Para poder cambiar la gráfica si cambio el canal
-            self.find_visa_devices()
+            # self.find_visa_devices()
+            self.start_multimetro_thread()
             self.setup_gui()
         finally:
             daq.safe_state(self.device_name)
+            self.rm.close()
+            # self.
     
     def setup_gui(self):
         """
@@ -57,24 +63,26 @@ class MIN:
         notebook.add(frame3, text="Multimetro SCPI")
         notebook.add(frame4, text="Señales")
         
-        # Frame 2 (Text Box)
+        # Frame 2 (Text Box) osci
         frame2.columnconfigure(0, weight=10)
         text_box = tk.Text(frame2)
         text_box.config(height=10)
+        # text_box.bind("<Return>", self.save_text)
         text_box.grid(row=0, column=0, padx=10, pady=10)
         # Respuesta
-        script_text_box = tk.Text(frame2, state='disabled')
-        script_text_box.config(height=10)
-        script_text_box.grid(row=1, column=0, padx=10, pady=10, columnspan=2)
+        self.script_text_box = tk.Text(frame2, state='disabled')
+        self.script_text_box.config(height=10)
+        self.script_text_box.grid(row=1, column=0, padx=10, pady=10, columnspan=2)
         
-        # Frame 3 (Text Box)
+        # Frame 3 (Text Box) multi
         text_box2 = tk.Text(frame3)
         text_box2.config(height=10)
+        # text_box2.bind("<Return>", self.save_text_mult)
         text_box2.grid(row=0, column=0, padx=10, pady=10)
         # Respuesta
-        script_text_box2 = tk.Text(frame3, state='disabled')
-        script_text_box2.config(height=10)
-        script_text_box2.grid(row=1, column=0, padx=10, pady=10, columnspan=2)
+        self.script_text_box2 = tk.Text(frame3, state='disabled')
+        self.script_text_box2.config(height=10)
+        self.script_text_box2.grid(row=1, column=0, padx=10, pady=10, columnspan=2)
 
         
         # Combobox para elegir la salida de señal
@@ -118,9 +126,11 @@ class MIN:
 
         
         save_button = ttk.Button(frame2, text="Send Command", command=lambda: self.save_text(text_box))
+        text_box.bind("<Return>", lambda event: save_button.invoke())
         save_button.grid(row=2, column=0, padx=10, pady=10)
         
         save_button2 = ttk.Button(frame3, text="Send Command", command=lambda: self.save_text_mult(text_box2))
+        text_box2.bind("<Return>", lambda event: save_button2.invoke())
         save_button2.grid(row=2, column=0, padx=10, pady=10)
                 
 
@@ -353,32 +363,32 @@ class MIN:
         print("noquiero ident")
         
         
-    def find_visa_devices(self):
-        rm = visa.ResourceManager()
-        dispositivos = rm.list_resources()
-        print(dispositivos)
-        visa_devices = []
-        for dispositivo in dispositivos:
-            try:
-                recurso = rm.open_resource(dispositivo)
-                if recurso.resource_name.startswith('USB'):
-                    visa_devices.append(dispositivo)
-                    recurso.close()
-                else:
-                    pass
-            except visa.VisaIOError:
-                pass                  
-        self.get_info_visa_devices(visa_devices)
-        return visa_devices
+    # def find_visa_devices(self):
+    #     rm = visa.ResourceManager()
+        
+    #     print(dispositivos)
+    #     visa_devices = []
+    #     for dispositivo in dispositivos:
+    #         try:
+    #             recurso = rm.open_resource(dispositivo)
+    #             if recurso.resource_name.startswith('USB'):
+    #                 visa_devices.append(dispositivo)
+    #                 recurso.close()
+    #             else:
+    #                 pass
+    #         except visa.VisaIOError:
+    #             pass                  
+    #     self.get_info_visa_devices(visa_devices)
+    #     return visa_devices
+    
     
     # Obtener información de los dispositivos Visa
-    def get_info_visa_devices(self, visa_devices):
-        rm = visa.ResourceManager()
-        for device in visa_devices:
-            
-            resource = rm.open_resource(device)
-            try:
-                
+    def find_visa_devices(self):
+        self.rm = visa.ResourceManager()
+        dispositivos = self.rm.list_resources()
+        for device in dispositivos:         
+            try:  
+                resource = self.rm.open_resource(device)
                 description = resource.query("*IDN?")
                 print("Dispositivo Visa encontrado:")
                 print(f"  Descripción: {description.strip()}")
@@ -394,20 +404,47 @@ class MIN:
             except visa.VisaIOError:
                 pass
                 
-                
 
                 
     def save_text(self, text_box):
         self.text = text_box.get("1.0", tk.END).strip()  # Obtener el texto del cuadro de texto
-        self.osciloscopio.write(self.text)
+        if self.osciloscopio is None:
+            self.start_osci_thread()
+            self.count=0
+        else:
+            try:
+                answer_osci = self.osciloscopio.query(self.text)
+                self.script_text_box.configure(state='normal')
+                self.script_text_box.delete('1.0', 'end')
+                self.script_text_box.insert('1.0', str(answer_osci))
+                self.script_text_box.configure(state='disabled')
+                print(answer_osci)
+            except visa.errors.VisaIOError as e:
+                self.count=0
+                self.start_osci_thread()
+                print(e)
+                
         
         
     def save_text_mult(self, text_box2):
         self.text2 = text_box2.get("1.0", tk.END).strip()  # Obtener el texto del cuadro de texto
         print("Envio el command: " + self.text2)
-        print(self.osciloscopio)
-        self.multimetro.query(self.text2)
-        
+        if self.multimetro is None:
+            self.start_multimetro_thread()   
+            self.count=0
+        else:
+            try:
+                answer_mult = self.multimetro.query(self.text2)
+                self.script_text_box2.configure(state='normal')
+                self.script_text_box2.delete('1.0', 'end')
+                self.script_text_box2.insert('1.0', answer_mult)
+                self.script_text_box2.configure(state='disabled') 
+                # self.script_text_box2.insert('1.0', )
+                print(answer_mult)
+            except:
+                self.count=0
+                self.start_multimetro_thread()
+                print("Error")
         
         
 
@@ -463,13 +500,42 @@ class MIN:
             time.sleep(2)
         self.update_voltage_label()
         
+    def check_multi_connections(self):
+        self.multimetro = None
+        while self.multimetro is None and self.count != 5:
+            self.find_visa_devices()
+            self.count = self.count + 1
+            # time.sleep(2)
+            
+    def check_osci_connections(self):
+        print("Llego aqui (osci_conect)")
+        self.osciloscopio = None
+        while self.osciloscopio is None and self.count != 5:
+            self.find_visa_devices()
+            self.count = self.count + 1
+            print(self.count)
+            print("Miro las conexiones visa")
+            # time.sleep(2)
+        
     # Hilos
     def start_check_thread(self):
         print("Entro al hilo")
         self.check_thread = threading.Thread(target=self.check_device_name)
         self.check_thread.daemon = True  # Hilo se ejecutará en segundo plano idealmente
         self.check_thread.start()
-            
+    
+    def start_multimetro_thread(self):
+        print("Entro al hilo del multi")
+        self.check_thread_mult = threading.Thread(target=self.check_multi_connections)
+        self.check_thread_mult.daemon = True  # Hilo se ejecutará en segundo plano idealmente
+        self.check_thread_mult.start() 
+
+    def start_osci_thread(self):
+        print("Entro al hilo del osci")
+        self.check_thread_osci = threading.Thread(target=self.check_osci_connections)
+        self.check_thread_osci.daemon = True  # Hilo se ejecutará en segundo plano idealmente
+        self.check_thread_osci.start() 
+        print("He terminado el hilo")
             
     def confirm_exit(self):
         if messagebox.askyesno("Exit", "Are you sure you want to exit?"):
