@@ -267,6 +267,7 @@ class MIN:
         self.ax.autoscale_view(True, True, True)  # Autoajustar el eje y
         self.canvas.draw()
         print(self.check_thread_mult.is_alive())
+        print(threading.active_count())
     
     def reset_plot(self):
         """
