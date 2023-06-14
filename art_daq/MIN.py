@@ -39,7 +39,8 @@ class MIN:
         finally:
             daq.safe_state(self.device_name)
             self.rm.close()
-            # self.
+            
+            
     
     def setup_gui(self):
         """
@@ -239,6 +240,8 @@ class MIN:
         self.plot_x = np.array([])
         self.plot_y = np.array([])
         self.time_counter = 0
+       
+        
     
     def update_plot(self, voltage):
         """
@@ -263,6 +266,7 @@ class MIN:
         self.ax.relim()  # Recalcular los límites de los datos en el eje y
         self.ax.autoscale_view(True, True, True)  # Autoajustar el eje y
         self.canvas.draw()
+        print(self.check_thread_mult.is_alive())
     
     def reset_plot(self):
         """
@@ -358,10 +362,7 @@ class MIN:
                 self.digital_input_indicator.config(bg="red")
 
    
-     # Cambiar estos tres, ya tengo experiencia, puedo hacerlo mejor       
-    def SCPI_communications(self):
-        print("noquiero ident")
-        
+       
         
     # def find_visa_devices(self):
     #     rm = visa.ResourceManager()
@@ -502,7 +503,7 @@ class MIN:
         
     def check_multi_connections(self):
         self.multimetro = None
-        while self.multimetro is None and self.count != 5:
+        while self.multimetro is None and self.count < 5:
             self.find_visa_devices()
             self.count = self.count + 1
             # time.sleep(2)
@@ -510,7 +511,7 @@ class MIN:
     def check_osci_connections(self):
         print("Llego aqui (osci_conect)")
         self.osciloscopio = None
-        while self.osciloscopio is None and self.count != 5:
+        while self.osciloscopio is None and self.count < 5:
             self.find_visa_devices()
             self.count = self.count + 1
             print(self.count)
@@ -527,14 +528,20 @@ class MIN:
     def start_multimetro_thread(self):
         print("Entro al hilo del multi")
         self.check_thread_mult = threading.Thread(target=self.check_multi_connections)
-        self.check_thread_mult.daemon = True  # Hilo se ejecutará en segundo plano idealmente
-        self.check_thread_mult.start() 
+        if self.check_thread_mult.is_alive():
+            print("Calma fiera, deja de pulsar el boton multi")
+        else:
+            self.check_thread_mult.daemon = True  # Hilo se ejecutará en segundo plano idealmente
+            self.check_thread_mult.start() 
 
     def start_osci_thread(self):
         print("Entro al hilo del osci")
         self.check_thread_osci = threading.Thread(target=self.check_osci_connections)
-        self.check_thread_osci.daemon = True  # Hilo se ejecutará en segundo plano idealmente
-        self.check_thread_osci.start() 
+        if self.check_thread_osci.is_alive():
+            print("Calma fiera, deja de pulsar el boton osci")
+        else:
+            self.check_thread_osci.daemon = True  # Hilo se ejecutará en segundo plano idealmente
+            self.check_thread_osci.start() 
         print("He terminado el hilo")
             
     def confirm_exit(self):
