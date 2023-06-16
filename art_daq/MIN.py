@@ -35,6 +35,7 @@ class MIN:
             self.previous_channel = None  # Para poder cambiar la gráfica si cambio el canal
             # self.find_visa_devices()
             self.start_multimetro_thread()
+            self.start_osci_thread()
             self.setup_gui()
         finally:
             daq.safe_state(self.device_name)
@@ -126,13 +127,13 @@ class MIN:
         
 
         
-        save_button = ttk.Button(frame2, text="Send Command", command=lambda: self.save_text(text_box))
-        text_box.bind("<Return>", lambda event: save_button.invoke())
-        save_button.grid(row=2, column=0, padx=10, pady=10)
+        self.save_button = ttk.Button(frame2, text="Send Command", command=lambda: self.save_text(text_box))
+        text_box.bind("<Return>", lambda event: self.save_button.invoke())
+        self.save_button.grid(row=2, column=0, padx=10, pady=10)
         
-        save_button2 = ttk.Button(frame3, text="Send Command", command=lambda: self.save_text_mult(text_box2))
-        text_box2.bind("<Return>", lambda event: save_button2.invoke())
-        save_button2.grid(row=2, column=0, padx=10, pady=10)
+        self.save_button2 = ttk.Button(frame3, text="Send Command", command=lambda: self.save_text_mult(text_box2))
+        text_box2.bind("<Return>", lambda event: self.save_button2.invoke())
+        self.save_button2.grid(row=2, column=0, padx=10, pady=10)
                 
 
         # Configurar los widgets
@@ -410,44 +411,39 @@ class MIN:
                 
     def save_text(self, text_box):
         self.text = text_box.get("1.0", tk.END).strip()  # Obtener el texto del cuadro de texto
-        if self.osciloscopio is None:
+        try:
+            answer_osci = self.osciloscopio.query(self.text)  
+        except visa.errors.VisaIOError as e:
+            self.save_button.config(state='disabled')
+            answer_osci = "Timeout"
             self.start_osci_thread()
-            self.count=0
-        else:
-            try:
-                answer_osci = self.osciloscopio.query(self.text)
-                self.script_text_box.configure(state='normal')
-                self.script_text_box.delete('1.0', 'end')
-                self.script_text_box.insert('1.0', str(answer_osci))
-                self.script_text_box.configure(state='disabled')
-                print(answer_osci)
-            except visa.errors.VisaIOError as e:
-                self.count=0
-                self.start_osci_thread()
-                print(e)
-                
+            print(e)
+            
+        self.script_text_box.configure(state='normal')
+        self.script_text_box.delete('1.0', 'end')
+        self.script_text_box.insert('1.0', str(answer_osci))
+        self.script_text_box.configure(state='disabled')
+        print(answer_osci)
+            
         
         
     def save_text_mult(self, text_box2):
         self.text2 = text_box2.get("1.0", tk.END).strip()  # Obtener el texto del cuadro de texto
         print("Envio el command: " + self.text2)
-        if self.multimetro is None:
-            self.start_multimetro_thread()   
-            self.count=0
-        else:
-            try:
-                answer_mult = self.multimetro.query(self.text2)
-                self.script_text_box2.configure(state='normal')
-                self.script_text_box2.delete('1.0', 'end')
-                self.script_text_box2.insert('1.0', answer_mult)
-                self.script_text_box2.configure(state='disabled') 
-                # self.script_text_box2.insert('1.0', )
-                print(answer_mult)
-            except:
-                self.count=0
-                self.start_multimetro_thread()
-                print("Error")
+        try:
+            answer_mult = self.multimetro.query(self.text2)
+        except:
+            self.save_button2.config(state='disabled')
+            answer_mult = "Timeout"
+            self.start_multimetro_thread()
+            
+        self.script_text_box2.configure(state='normal')
+        self.script_text_box2.delete('1.0', 'end')
+        self.script_text_box2.insert('1.0', answer_mult)
+        self.script_text_box2.configure(state='disabled') 
+        print(answer_mult)
         
+
         
 
 
@@ -504,20 +500,23 @@ class MIN:
         
     def check_multi_connections(self):
         self.multimetro = None
-        while self.multimetro is None and self.count < 5:
+        while self.multimetro is None:
             self.find_visa_devices()
             self.count = self.count + 1
-            # time.sleep(2)
+            print("COUNT ES: " + str(self.count))
+            # time.sleep(1)
+        self.save_button2.config(state='active')
             
     def check_osci_connections(self):
         print("Llego aqui (osci_conect)")
         self.osciloscopio = None
-        while self.osciloscopio is None and self.count < 5:
+        while self.osciloscopio is None:
             self.find_visa_devices()
             self.count = self.count + 1
             print(self.count)
             print("Miro las conexiones visa")
             # time.sleep(2)
+        self.save_button.config(state='active')
         
     # Hilos
     def start_check_thread(self):
@@ -529,20 +528,14 @@ class MIN:
     def start_multimetro_thread(self):
         print("Entro al hilo del multi")
         self.check_thread_mult = threading.Thread(target=self.check_multi_connections)
-        if self.check_thread_mult.is_alive():
-            print("Calma fiera, deja de pulsar el boton multi")
-        else:
-            self.check_thread_mult.daemon = True  # Hilo se ejecutará en segundo plano idealmente
-            self.check_thread_mult.start() 
+        self.check_thread_mult.daemon = True  # Hilo se ejecutará en segundo plano idealmente
+        self.check_thread_mult.start() 
 
     def start_osci_thread(self):
         print("Entro al hilo del osci")
         self.check_thread_osci = threading.Thread(target=self.check_osci_connections)
-        if self.check_thread_osci.is_alive():
-            print("Calma fiera, deja de pulsar el boton osci")
-        else:
-            self.check_thread_osci.daemon = True  # Hilo se ejecutará en segundo plano idealmente
-            self.check_thread_osci.start() 
+        self.check_thread_osci.daemon = True  # Hilo se ejecutará en segundo plano idealmente
+        self.check_thread_osci.start() 
         print("He terminado el hilo")
             
     def confirm_exit(self):
