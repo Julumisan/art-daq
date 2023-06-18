@@ -31,6 +31,7 @@ class MIN:
         try:
             self.osciloscopio = None
             self.multimetro = None
+            self.para = False
             self.count = 0
             self.previous_channel = None  # Para poder cambiar la gráfica si cambio el canal
             # self.find_visa_devices()
@@ -38,7 +39,10 @@ class MIN:
             self.start_osci_thread()
             self.setup_gui()
         finally:
+            self.para = True
             daq.safe_state(self.device_name)
+            self.check_thread_mult.join()
+            self.check_thread_osci.join()
             self.rm.close()
             
             
@@ -413,11 +417,10 @@ class MIN:
         self.text = text_box.get("1.0", tk.END).strip()  # Obtener el texto del cuadro de texto
         try:
             answer_osci = self.osciloscopio.query(self.text)  
-        except visa.errors.VisaIOError as e:
+        except:
             self.save_button.config(state='disabled')
             answer_osci = "Timeout"
             self.start_osci_thread()
-            print(e)
             
         self.script_text_box.configure(state='normal')
         self.script_text_box.delete('1.0', 'end')
@@ -500,7 +503,7 @@ class MIN:
         
     def check_multi_connections(self):
         self.multimetro = None
-        while self.multimetro is None:
+        while self.multimetro is None and not self.para:
             self.find_visa_devices()
             self.count = self.count + 1
             print("COUNT ES: " + str(self.count))
@@ -510,7 +513,7 @@ class MIN:
     def check_osci_connections(self):
         print("Llego aqui (osci_conect)")
         self.osciloscopio = None
-        while self.osciloscopio is None:
+        while self.osciloscopio is None and not self.para:
             self.find_visa_devices()
             self.count = self.count + 1
             print(self.count)
