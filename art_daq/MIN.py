@@ -7,7 +7,7 @@ Created on Fri Mar 24 22:34:59 2023
 Clase de testeo de la DAQ con iface gráfica para poder comprobar
 de manera sencilla y clara cómo está la tarjeta.
 
-v2.0.1
+v2.3
 """
 
 import tkinter as tk
@@ -496,9 +496,9 @@ class MIN:
             print("c")
             
     def check_device_name(self):
-        while self.device_name is None:
+        while self.device_name is None and not self.para:
             self.device_name = daq.get_connected_device()
-            time.sleep(2)
+            time.sleep(0.3)
         self.update_voltage_label()
         
     def check_multi_connections(self):
@@ -523,22 +523,32 @@ class MIN:
         
     # Hilos
     def start_check_thread(self):
-        print("Entro al hilo")
-        self.check_thread = threading.Thread(target=self.check_device_name)
-        self.check_thread.daemon = True  # Hilo se ejecutará en segundo plano idealmente
-        self.check_thread.start()
+        """Inicia el hilo para verificar el nombre del dispositivo."""
+        if not hasattr(self, 'check_thread') or not self.check_thread.is_alive():
+            print("Entro al hilo")
+            self.check_thread = threading.Thread(target=self.check_device_name)
+            self.check_thread.daemon = True  # Hilo se ejecutará en segundo plano idealmente
+            self.check_thread.start()
+        else:
+            print("El hilo ya está en ejecución")
     
     def start_multimetro_thread(self):
         print("Entro al hilo del multi")
-        self.check_thread_mult = threading.Thread(target=self.check_multi_connections)
-        self.check_thread_mult.daemon = True  # Hilo se ejecutará en segundo plano idealmente
-        self.check_thread_mult.start() 
+        if not hasattr(self, 'check_thread_mult') or not self.check_thread_mult.is_alive():
+            self.check_thread_mult = threading.Thread(target=self.check_multi_connections)
+            self.check_thread_mult.daemon = True  # Hilo se ejecutará en segundo plano idealmente
+            self.check_thread_mult.start() 
+        else:
+            print("El hilo ya está en ejecución")
 
     def start_osci_thread(self):
         print("Entro al hilo del osci")
-        self.check_thread_osci = threading.Thread(target=self.check_osci_connections)
-        self.check_thread_osci.daemon = True  # Hilo se ejecutará en segundo plano idealmente
-        self.check_thread_osci.start() 
+        if not hasattr(self, 'check_thread_osci') or not self.check_thread_osci.is_alive():
+            self.check_thread_osci = threading.Thread(target=self.check_osci_connections)
+            self.check_thread_osci.daemon = True  # Hilo se ejecutará en segundo plano idealmente
+            self.check_thread_osci.start() 
+        else:
+            print("El hilo ya está en ejecución")
         print("He terminado el hilo")
             
     def confirm_exit(self):

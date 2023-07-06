@@ -3,7 +3,7 @@
 Created on Tue Mar 7 12:26:46 2023
 
 
-Este Script va a ser el intento de librería Python de fácil
+Este Script es la librería Python de fácil
 uso y acceso a las carecterísticas de la DAQ, en los que destaco:
     -Cambios de voltaje de las diferentes salidas.
     -Medidas de voltaje de las diferentes entradas.
@@ -14,7 +14,7 @@ uso y acceso a las carecterísticas de la DAQ, en los que destaco:
 
 @author: Julu
 
-@version: v2.0.1
+@version: v2.3
 
 Esta nueva versión cuenta con todas las funcionalidades previstas, comentarios
 aclaratorios acerca del uso de las funciones, tanto de su función como de 
@@ -390,23 +390,24 @@ def generate_sine_wave(device_name: str, ao_channel: int, frequency: float, ampl
     Notas:
         Esta implementación no es precisa ni estable. Para este tipo de señales, se recomienda usar un DAQ que pueda
         manejarlas eficientemente. Esta implementación también consume mucha CPU debido a la creación y destrucción de
-        tareas en cada iteración del bucle.
+        tareas en cada iteración del bucle. 
+        A pesar de lo que he leído, se puede crear fuera del bucle el contexto y así no crear y eliminar la tarea.
+        Realmente no es tan malo, no es ideal, desde luego, son señales poco suaves.
     """
     chan_a = f"{device_name}/ao{ao_channel}"
 
     start_time = time.time()
     current_time = start_time
-
-    while current_time - start_time < duration:
-        # Calcular el voltaje sinusoidal en función del tiempo
-        elapsed_time = current_time - start_time
-        voltage = amplitude * math.sin(2 * math.pi * frequency * elapsed_time)
-
-        # Establecer el voltaje en el canal de salida analógica
-        with nidaqmx.Task() as task:
+    with nidaqmx.Task() as task:
+        while current_time - start_time < duration:
+            # Calcular el voltaje sinusoidal en función del tiempo
+            elapsed_time = current_time - start_time
+            voltage = amplitude * math.sin(2 * math.pi * frequency * elapsed_time)
+    
+            # Establecer el voltaje en el canal de salida analógica
             task.ao_channels.add_ao_voltage_chan(chan_a)
             task.write(voltage)
-
-        # Esperar un corto período de tiempo antes de actualizar el voltaje nuevamente
-        time.sleep(0.001)  # 1 ms
-        current_time = time.time()
+    
+            # Esperar un corto período de tiempo antes de actualizar el voltaje nuevamente
+            time.sleep(0.001)  # 1 ms
+            current_time = time.time()
