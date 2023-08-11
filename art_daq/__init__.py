@@ -3,7 +3,7 @@
 Created on Sat Mar 18 16:05:36 2023
 
 @author: Julu
-@version: 2.3
+@version: 2.4
 
 El archivo init.py es necesario para que Python reconozca que este es un paquete.
 Debe estar vacío para evitar una dependencia cíclica.

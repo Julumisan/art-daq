@@ -14,7 +14,7 @@ uso y acceso a las carecterísticas de la DAQ, en los que destaco:
 
 @author: Julu
 
-@version: v2.3
+@version: v2.4
 
 Esta nueva versión cuenta con todas las funcionalidades previstas, comentarios
 aclaratorios acerca del uso de las funciones, tanto de su función como de 
