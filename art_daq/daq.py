@@ -14,7 +14,7 @@ uso y acceso a las carecterísticas de la DAQ, en los que destaco:
 
 @author: Julu
 
-@version: v2.4
+@version: v2.4.3
 
 Esta nueva versión cuenta con todas las funcionalidades previstas, comentarios
 aclaratorios acerca del uso de las funciones, tanto de su función como de 
@@ -324,7 +324,7 @@ def generate_square_wave(device_name: str, ao_channel: int, frequency: float, am
     return True
         
         
-def generate_triangle_wave(device_name: str, ao_channel: int, frequency: float, amplitude: float, duration: float, steps: int = 100, end: bool) -> bool:
+def generate_triangle_wave(device_name: str, ao_channel: int, frequency: float, amplitude: float, duration: float,  end: bool, steps: int = 100) -> bool:
     """
     Genera una onda triangular de la frecuencia y amplitud especificadas en el canal de salida analógica especificado 
     en el dispositivo especificado durante el tiempo especificado. La onda se genera con el número especificado de 
@@ -380,7 +380,7 @@ def generate_triangle_wave(device_name: str, ao_channel: int, frequency: float, 
 
 
 
-def generate_sine_wave(device_name: str, ao_channel: int, frequency: float, amplitude: float, duration: float, steps: float, end: bool) -> bool:
+def generate_sine_wave(device_name: str, ao_channel: int, frequency: float, amplitude: float, duration: float,  end: bool, steps: float) -> bool:
     """
     Genera una señal sinusoidal en el canal de salida analógica especificado durante la duración especificada.
     El voltaje sinusoidal se calcula en función del tiempo utilizando la frecuencia y la amplitud especificadas.

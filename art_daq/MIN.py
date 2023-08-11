@@ -7,7 +7,7 @@ Created on Fri Mar 24 22:34:59 2023
 Clase de testeo de la DAQ con iface gráfica para poder comprobar
 de manera sencilla y clara cómo está la tarjeta.
 
-v2.4
+v2.4.3
 
 """
 
@@ -571,10 +571,10 @@ class MIN:
                 self.fin_signal = daq.generate_square_wave(self.device_name, ao_channel, frequency, amplitude, duration, self.kill_signal)
                 
             def triangular_signal():
-                self.fin_signal = daq.generate_triangle_wave(self.device_name, ao_channel, frequency, amplitude, duration, steps, self.kill_signal)
+                self.fin_signal = daq.generate_triangle_wave(self.device_name, ao_channel, frequency, amplitude, duration, self.kill_signal, steps)
                 
             def sinu_wave():
-                self.fin_signal = daq.generate_sine_wave(self.device_name, ao_channel, frequency, amplitude, duration, steps, self.kill_signal)   
+                self.fin_signal = daq.generate_sine_wave(self.device_name, ao_channel, frequency, amplitude, duration,  self.kill_signal, steps)   
         
             if frequency < 0:
                 messagebox.showerror("Error", "Negative frequency is not allowed")
