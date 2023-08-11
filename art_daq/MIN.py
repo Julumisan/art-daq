@@ -7,7 +7,8 @@ Created on Fri Mar 24 22:34:59 2023
 Clase de testeo de la DAQ con iface gráfica para poder comprobar
 de manera sencilla y clara cómo está la tarjeta.
 
-v2.3
+v2.4
+
 """
 
 import tkinter as tk
@@ -15,6 +16,7 @@ import numpy as np
 import threading
 import time
 import nidaqmx
+from threading import Event
 from tkinter import ttk
 from art_daq import daq
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
@@ -32,12 +34,16 @@ class MIN:
             self.osciloscopio = None
             self.multimetro = None
             self.para = False
+            self.abort_signal_generation = False
+            self.conexion = True
             self.count = 0
+            self.kill_signal = False
             self.previous_channel = None  # Para poder cambiar la gráfica si cambio el canal
             # self.find_visa_devices()
             self.start_multimetro_thread()
             self.start_osci_thread()
             self.setup_gui()
+            daq.safe_state(self.device_name)
         finally:
             self.para = True
             daq.safe_state(self.device_name)
@@ -96,7 +102,7 @@ class MIN:
         
         self.signal_combobox = ttk.Combobox(frame4, values=tipos, state="readonly")
         self.signal_combobox.set(tipos[0])
-        self.signal_combobox.grid(row=6, column=0, padx=5, pady=5, sticky=tk.W)
+        self.signal_combobox.grid(row=7, column=0, padx=5, pady=5, sticky=tk.W)
         
         # Salida analógica
         
@@ -123,9 +129,20 @@ class MIN:
         self.text_box_dur = tk.Entry(frame4)
         self.text_box_dur.grid(row=5, column=1, padx=10, pady=10, sticky=tk.E)
         
-        activate_button = ttk.Button(frame4, text="Activar señal", command=lambda: self.activate_signal())
-        activate_button.grid(row=6, column=1, padx=10, pady=10)
         
+        dur_label = ttk.Label(frame4, text="Steps: ", font=("", 13))
+        dur_label.grid(row=6, column=0, padx=5, pady=5, sticky=tk.W)
+        self.text_box_steps = tk.Entry(frame4)
+        self.text_box_steps.grid(row=6, column=1, padx=10, pady=10, sticky=tk.E)
+        
+        
+        self.activate_button = ttk.Button(frame4, text="Activar señal", command=lambda: self.start_signal_thread())
+        self.activate_button.grid(row=7, column=1, padx=10, pady=10)
+        
+        
+        self.deactivate_button = ttk.Button(frame4, text="Desactivar señal", command=lambda: self.kill_signal_thread(), style="Red.TButton")
+        self.deactivate_button.grid(row=7, column=0, padx=10, pady=10)
+        self.deactivate_button.config(state='disabled')
         
         # Final Frame 4
         
@@ -292,22 +309,35 @@ class MIN:
         self.device_name = daq.get_connected_device()
         try:
             if self.device_name:
-               selected_channel = self.input_channel_combobox.get()
+                self.conexion = True
+                selected_channel = self.input_channel_combobox.get()
     
-               # Comdaq si el canal seleccionado ha cambiado
-               if self.previous_channel != selected_channel:
-                   self.reset_plot()  # Reinicia la gráfica si el canal cambia
-                   self.previous_channel = selected_channel
-    
-               chan_a = self.device_name + "/ai{}".format(selected_channel)
-               voltage = daq.get_voltage_analogic(chan_a)
-               self.voltage_label.config(text="Voltage: {:.6f} V".format(voltage))
-               self.update_plot(voltage)
-               # print(self.check_thread.is_alive())
-               self.root.after(100, self.update_voltage_label)
+                # Comdaq si el canal seleccionado ha cambiado
+                if self.previous_channel != selected_channel:
+                    self.reset_plot()  # Reinicia la gráfica si el canal cambia
+                    self.previous_channel = selected_channel
+     
+                chan_a = self.device_name + "/ai{}".format(selected_channel)
+                voltage = daq.get_voltage_analogic(chan_a)
+                self.voltage_label.config(text="Voltage: {:.6f} V".format(voltage))
+                self.update_plot(voltage)
+                # print(self.check_thread.is_alive())
+                self.root.after(100, self.update_voltage_label)
+                
+                if self.fin_signal is False:
+                    self.activate_button.config(state="disabled")
+                    self.deactivate_button.config(state="normal")
+                else:
+                    self.activate_button.config(state="normal")
+                    self.deactivate_button.config(state="disabled")
+                
             else:
+                self.conexion = False
                 self.voltage_label.config(text="No hay dispositivos conectados")
                 self.start_check_thread()
+                self.set_digital_output()
+                self.update_digital_output_label()
+                self.check_digital_input_state()
                 print(self.check_thread.is_alive())
         except nidaqmx.errors.DaqError as e:
             self.check_device_name()
@@ -358,14 +388,17 @@ class MIN:
         Checkea el input de la entrada del combobox.
         """
         device_name = daq.get_connected_device()
-        if device_name:
-            selected_channel = self.digital_input_combobox.get()
-            chan_d = device_name + "/" + selected_channel  # Actualizar el formato del canal
-            state = daq.read_digital_input(chan_d)
-            if state:
-                self.digital_input_indicator.config(bg="green")
-            else:
-                self.digital_input_indicator.config(bg="red")
+        if self.conexion:
+            if device_name:
+                selected_channel = self.digital_input_combobox.get()
+                chan_d = device_name + "/" + selected_channel  # Actualizar el formato del canal
+                state = daq.read_digital_input(chan_d)
+                if state:
+                    self.digital_input_indicator.config(bg="green")
+                else:
+                    self.digital_input_indicator.config(bg="red")
+        else:
+            self.digital_input_indicator.config(bg="yellow")
 
    
        
@@ -450,50 +483,11 @@ class MIN:
         
 
 
-    def activate_signal(self):
-        selected_index = self.signal_combobox.current()
-        ao_channel = self.output_channel_combobox_frame4.current()
-        frequency = self.text_box_freq.get()
-        amplitude = self.text_box_amp.get()
-        duration = self.text_box_dur.get()
-    
-        if not (frequency.isnumeric() and amplitude.isnumeric() and duration.isnumeric()):
-            messagebox.showerror("Error", "Please, check that everything is filled with valid numbers")
-            return
-    
-        frequency = float(frequency)
-        amplitude = float(amplitude)
-        duration = float(duration)
-    
-        if frequency < 0:
-            messagebox.showerror("Error", "Negative frequency is not allowed")
-            return
-    
-        if amplitude < 0:
-            messagebox.showerror("Error", "Negative amplitude is not allowed")
-            return
-    
-        if duration < 0:
-            messagebox.showerror("Error", "Negative duration is not allowed")
-            return
-    
-        if amplitude > 5:
-            messagebox.showerror("Error", "Amplitude should be less than or equal to 5")
-            return
-        
-        # Si no se produjeron errores, se ejecuta el código relacionado con selected_index
-        if selected_index == 0:
-            # Ejecutar el método asociado a la opción "Onda Cuadrada"
-            daq.generate_square_wave(self.device_name, ao_channel, frequency, amplitude, duration)
-            print("a")
-        elif selected_index == 1:
-            # Ejecutar el método asociado a la opción "Onda Triangular"     
-            daq.generate_triangle_wave(self.device_name, ao_channel, frequency, amplitude, duration)
-            print("b")
-        elif selected_index == 2:
-            # Ejecutar el método asociado a la opción "Onda Sinusoidal"
-            daq.generate_sine_wave(self.device_name, ao_channel, frequency, amplitude, duration)
-            print("c")
+    # def activate_signal(self):       
+    #     # Si no se produjeron errores, se ejecuta el código relacionado con selected_index
+    #     self.start_signal_thread(selected_index)
+    #     self.activate_button.config(state='active')
+
             
     def check_device_name(self):
         while self.device_name is None and not self.para:
@@ -550,6 +544,88 @@ class MIN:
         else:
             print("El hilo ya está en ejecución")
         print("He terminado el hilo")
+        
+        
+    def start_signal_thread(self):
+        """Inicia el hilo para señales"""
+        if not hasattr(self, 'signal_thread') or not self.signal_thread.is_alive():
+            print("Entro al hilo señales")
+            selected_index = self.signal_combobox.current()
+            ao_channel = self.output_channel_combobox_frame4.current()
+            frequency = self.text_box_freq.get()
+            amplitude = self.text_box_amp.get()
+            duration = self.text_box_dur.get()
+            steps = self.text_box_steps.get()
+            self.kill_signal = False
+        
+            if not (frequency.isnumeric() and amplitude.isnumeric() and duration.isnumeric()):
+                messagebox.showerror("Error", "Please, check that everything is filled with valid numbers")
+                return
+        
+            frequency = float(frequency)
+            amplitude = float(amplitude)
+            duration = float(duration)
+            steps = int(steps)
+            
+            def squared_signal():
+                self.fin_signal = daq.generate_square_wave(self.device_name, ao_channel, frequency, amplitude, duration, self.kill_signal)
+                
+            def triangular_signal():
+                self.fin_signal = daq.generate_triangle_wave(self.device_name, ao_channel, frequency, amplitude, duration, steps, self.kill_signal)
+                
+            def sinu_wave():
+                self.fin_signal = daq.generate_sine_wave(self.device_name, ao_channel, frequency, amplitude, duration, steps, self.kill_signal)   
+        
+            if frequency < 0:
+                messagebox.showerror("Error", "Negative frequency is not allowed")
+                return
+        
+            if amplitude < 0:
+                messagebox.showerror("Error", "Negative amplitude is not allowed")
+                return
+        
+            if duration < 0:
+                messagebox.showerror("Error", "Negative duration is not allowed")
+                return
+        
+            if amplitude > 5:
+                messagebox.showerror("Error", "Amplitude should be less than or equal to 5")
+                return
+            
+            if steps < 0 :
+                messagebox.showerror("Error", "Negative steps are not allowed")
+                return
+            
+            if selected_index == 0:
+                # Ejecutar el método asociado a la opción "Onda Cuadrada"
+                self.fin_signal = False
+                self.signal_thread = threading.Thread(target=squared_signal)
+                print("a")
+            elif selected_index == 1:
+                self.fin_signal = False
+                # Ejecutar el método asociado a la opción "Onda Triangular"     
+                self.signal_thread = threading.Thread(target= triangular_signal)
+                print("b")
+            elif selected_index == 2:
+                self.fin_signal = False
+                # Ejecutar el método asociado a la opción "Onda Sinusoidal"
+                self.signal_thread = threading.Thread(target= sinu_wave)
+                print("c")
+                
+
+            
+            # self.activate_button.config(state='disabled')
+            self.signal_thread.daemon = True   # Hilo se ejecutará en segundo plano idealmente 
+            self.signal_thread.start()
+        else:
+            print("El hilo ya está en ejecución")  
+            
+    def kill_signal_thread(self):
+
+        self.kill_signal = True
+        
+    
+    
             
     def confirm_exit(self):
         if messagebox.askyesno("Exit", "Are you sure you want to exit?"):
