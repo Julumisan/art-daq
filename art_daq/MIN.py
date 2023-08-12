@@ -7,7 +7,7 @@ Created on Fri Mar 24 22:34:59 2023
 Clase de testeo de la DAQ con iface gráfica para poder comprobar
 de manera sencilla y clara cómo está la tarjeta.
 
-v3.1.0
+v3.1.2
 
 """
 
@@ -120,7 +120,7 @@ class MIN:
         self.text_box_freq = tk.Entry(frame4)
         self.text_box_freq.grid(row=3, column=1, padx=10, pady=1, sticky=tk.E)
         
-        amp_label = ttk.Label(frame4, text="Amplitude [V] (0-5): ", font=("", 13))
+        amp_label = ttk.Label(frame4, text="Amplitude [V] (0-10): ", font=("", 13))
         amp_label.grid(row=4, column=0, padx=5, pady=5, sticky=tk.W)
         self.text_box_amp = tk.Entry(frame4)
         self.text_box_amp.grid(row=4, column=1, padx=10, pady=10, sticky=tk.E)
@@ -593,8 +593,8 @@ class MIN:
                 messagebox.showerror("Error", "Negative duration is not allowed")
                 return
         
-            if amplitude > 5:
-                messagebox.showerror("Error", "Amplitude should be less than or equal to 5")
+            if amplitude > 10:
+                messagebox.showerror("Error", "Amplitude should be less than or equal to 10")
                 return
             
             if steps < 0 :

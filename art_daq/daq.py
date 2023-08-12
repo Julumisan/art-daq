@@ -14,7 +14,7 @@ uso y acceso a las carecterísticas de la DAQ, en los que destaco:
 
 @author: Julu
 
-@version: v3.1.0
+@version: v3.1.2
 
 Esta nueva versión cuenta con todas las funcionalidades previstas, comentarios
 aclaratorios acerca del uso de las funciones, tanto de su función como de 
@@ -412,29 +412,29 @@ class Signals:
         """
         
         chan_a = f"{device_name}/ao{ao_channel}"
-        period = 1 / frequency           
-        start_time = time.time()
-        signal_time = time.time()
-        current_time = start_time
-        
+        period = 1 / frequency
+        step_duration = period / steps
         
         with nidaqmx.Task() as task:
             task.ao_channels.add_ao_voltage_chan(chan_a)
-            while current_time - start_time < duration and not self.end:
-                print(period/steps)
-                print(period/steps)
-                if  current_time < signal_time + period:
-                    task.write(amplitude * period/steps* (time.time()-signal_time))
-                else:
-                     signal_time = time.time()  
-                 
-                # Cambio el delay para que la interrupción de programa sea casi instantanea
-                time.sleep(1/steps)
-                current_time = time.time()
             
+            start_time = time.time()
+            while time.time() - start_time < duration and not self.end:
+                t = time.time() - start_time
+                
+                # Calculate the phase of the sawtooth wave
+                phase = (t / period) % 1.0
+                
+                # Calculate the voltage based on the phase
+                voltage = amplitude * (2 * phase - 1)
+                
+                task.write(voltage)
+                
+                # Wait for the specified step duration before generating the next voltage
+                time.sleep(step_duration)
+        
         all_analogic_safe(f"{device_name}")
-        return True    
-
+        return True
 
     
     
@@ -485,4 +485,4 @@ class Signals:
         print("ENTRO AQUI Y EL BOOL ES: ")
         print(self.end)
         
-          
+        
