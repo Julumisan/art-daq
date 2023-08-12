@@ -7,7 +7,7 @@ Created on Fri Mar 24 22:34:59 2023
 Clase de testeo de la DAQ con iface gráfica para poder comprobar
 de manera sencilla y clara cómo está la tarjeta.
 
-v2.4.3
+v3.1.0
 
 """
 
@@ -16,7 +16,6 @@ import numpy as np
 import threading
 import time
 import nidaqmx
-from threading import Event
 from tkinter import ttk
 from art_daq import daq
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
@@ -37,9 +36,11 @@ class MIN:
             self.abort_signal_generation = False
             self.conexion = True
             self.count = 0
-            self.kill_signal = False
+            daq.Signals().kill_signal = False
+            self.fin_signal = True
             self.previous_channel = None  # Para poder cambiar la gráfica si cambio el canal
             # self.find_visa_devices()
+            self.ClaseSignals =  daq.Signals()
             self.start_multimetro_thread()
             self.start_osci_thread()
             self.setup_gui()
@@ -98,7 +99,7 @@ class MIN:
 
         
         # Combobox para elegir la salida de señal
-        tipos = ["Square Wave", "Triangular Wave", "Sinusoidal Wave"]
+        tipos = ["Square Wave", "Triangular Wave", "Sinusoidal Wave", "Sawtooth Wave"]
         
         self.signal_combobox = ttk.Combobox(frame4, values=tipos, state="readonly")
         self.signal_combobox.set(tipos[0])
@@ -556,9 +557,10 @@ class MIN:
             amplitude = self.text_box_amp.get()
             duration = self.text_box_dur.get()
             steps = self.text_box_steps.get()
-            self.kill_signal = False
+            self.ClaseSignals.end = False
+            
         
-            if not (frequency.isnumeric() and amplitude.isnumeric() and duration.isnumeric()):
+            if not (isfloat(frequency) and isfloat(amplitude) and isfloat(duration)):
                 messagebox.showerror("Error", "Please, check that everything is filled with valid numbers")
                 return
         
@@ -568,13 +570,16 @@ class MIN:
             steps = int(steps)
             
             def squared_signal():
-                self.fin_signal = daq.generate_square_wave(self.device_name, ao_channel, frequency, amplitude, duration, self.kill_signal)
+                self.fin_signal = self.ClaseSignals.generate_square_wave(self.device_name, ao_channel, frequency, amplitude, duration)
                 
             def triangular_signal():
-                self.fin_signal = daq.generate_triangle_wave(self.device_name, ao_channel, frequency, amplitude, duration, self.kill_signal, steps)
+                self.fin_signal = self.ClaseSignals.generate_triangle_wave(self.device_name, ao_channel, frequency, amplitude, duration, steps)
+            
+            def saw_signal():
+                self.fin_signal = self.ClaseSignals.generate_sawtooth_wave(self.device_name, ao_channel, frequency, amplitude, duration, steps)
                 
             def sinu_wave():
-                self.fin_signal = daq.generate_sine_wave(self.device_name, ao_channel, frequency, amplitude, duration,  self.kill_signal, steps)   
+                self.fin_signal = self.ClaseSignals.generate_sine_wave(self.device_name, ao_channel, frequency, amplitude, duration, steps)   
         
             if frequency < 0:
                 messagebox.showerror("Error", "Negative frequency is not allowed")
@@ -611,8 +616,13 @@ class MIN:
                 # Ejecutar el método asociado a la opción "Onda Sinusoidal"
                 self.signal_thread = threading.Thread(target= sinu_wave)
                 print("c")
+            elif selected_index == 3:
+                self.fin_signal = False
+                # Ejecutar el método asociado a la opción "Onda Sinusoidal"
+                self.signal_thread = threading.Thread(target= saw_signal)
+                print("d")
                 
-
+    
             
             # self.activate_button.config(state='disabled')
             self.signal_thread.daemon = True   # Hilo se ejecutará en segundo plano idealmente 
@@ -620,16 +630,25 @@ class MIN:
         else:
             print("El hilo ya está en ejecución")  
             
-    def kill_signal_thread(self):
-
-        self.kill_signal = True
+    def kill_signal_thread(self):     
+        self.fin_signal = True
+        self.ClaseSignals.kill_signal()
         
-    
+
+
     
             
     def confirm_exit(self):
         if messagebox.askyesno("Exit", "Are you sure you want to exit?"):
             self.root.destroy()        
-            
+
+def isfloat(num):
+    try:
+        float(num)
+        return True
+    except ValueError:
+        return False    
+    
+        
 if __name__ == "__main__":
     min_app = MIN()

@@ -14,7 +14,7 @@ uso y acceso a las carecterísticas de la DAQ, en los que destaco:
 
 @author: Julu
 
-@version: v2.4.3
+@version: v3.1.0
 
 Esta nueva versión cuenta con todas las funcionalidades previstas, comentarios
 aclaratorios acerca del uso de las funciones, tanto de su función como de 
@@ -275,148 +275,214 @@ def get_connected_device() -> str:
         
 
 
-def generate_square_wave(device_name: str, ao_channel: int, frequency: float, amplitude: float, duration: float, end: bool) -> bool:
-    """
-    Genera una onda cuadrada de la frecuencia y amplitud especificadas en el canal analógico de salida especificado en el 
-    dispositivo NI especificado durante la duración especificada.
-
-    Args:
-        device_name (str): El nombre del dispositivo NI.
-        ao_channel (int): El número del canal analógico de salida.
-        frequency (float): La frecuencia de la onda cuadrada en Hz.
-        amplitude (float): La amplitud de la onda cuadrada en voltios.
-        duration (float): La duración durante la cual se generará la onda cuadrada en segundos.
-
-    Returns:
-        bool: True cuando la señal acabe.
-
-    Notas:
-        Esta función establece el voltaje en la amplitud deseada durante la mitad del periodo de la onda cuadrada y
-        en -amplitud durante la otra mitad. Luego espera la mitad del periodo antes de repetir. La implementación asume
-        que el periodo es mayor que el tiempo de espera.
-
-    """
-    chan_a = f"{device_name}/ao{ao_channel}"
+class Signals:
     
-    period = 1 / frequency
-    half_period = period / 2
-
-    start_time = time.time()
-    current_time = start_time
-
-    while current_time - start_time < duration and not end:
-        # Establecer el voltaje en la amplitud deseada
+    def __init__(self):
+        self.end = False
+        
+        
+    def generate_square_wave(self, device_name: str, ao_channel: int, frequency: float, amplitude: float, duration: float, steps: int = 100) -> bool:
+        """
+        Genera una onda cuadrada de la frecuencia y amplitud especificadas en el canal analógico de salida especificado en el 
+        dispositivo NI especificado durante la duración especificada.
+    
+        Args:
+            device_name (str): El nombre del dispositivo NI.
+            ao_channel (int): El número del canal analógico de salida.
+            frequency (float): La frecuencia de la onda cuadrada en Hz.
+            amplitude (float): La amplitud de la onda cuadrada en voltios.
+            duration (float): La duración durante la cual se generará la onda cuadrada en segundos.
+            steps (int, optional): Número de pasos para estar atento a la finalización
+                                   por usuario de la onda cuadrada. Valor por defecto: 100.
+    
+        Returns:
+            bool: True cuando la señal acabe.
+    
+        Notas:
+            Esta función establece el voltaje en la amplitud deseada durante la mitad del periodo de la onda cuadrada y
+            en -amplitud durante la otra mitad. Luego espera la mitad del periodo antes de repetir. La implementación asume
+            que el periodo es mayor que el tiempo de espera.
+    
+        """
+        chan_a = f"{device_name}/ao{ao_channel}"
+        
+        period = 1 / frequency
+        half_period = period / 2
+    
+        
+        start_time = time.time()
+        signal_time = time.time()
+        current_time = start_time
         with nidaqmx.Task() as task:
             task.ao_channels.add_ao_voltage_chan(chan_a)
-            task.write(amplitude)
+            while current_time - start_time < duration and not self.end:
+                if  current_time < signal_time + half_period:
+                    task.write(amplitude)
+                elif current_time > signal_time + half_period and current_time <  signal_time + period:
+                    task.write(-amplitude)
+                else:
+                     signal_time = time.time()  
+                 
+                # Cambio el delay para que la interrupción de programa sea casi instantanea
+                time.sleep(1/steps)
+                current_time = time.time()
+            
+        all_analogic_safe(f"{device_name}")
+        return True
+            
+            
+    def generate_triangle_wave(self, device_name: str, ao_channel: int, frequency: float, amplitude: float, duration: float, steps: int = 100) -> bool:
+        """
+        Genera una onda triangular de la frecuencia y amplitud especificadas en el canal de salida analógica especificado 
+        en el dispositivo especificado durante el tiempo especificado. La onda se genera con el número especificado de 
+        pasos y, por defecto, se usan 100 pasos para generar una onda suave.
         
-        time.sleep(half_period)
+        Args:
+            device_name (str): Nombre del dispositivo DAQ.
+            ao_channel (int): Canal de salida analógica.
+            frequency (float): Frecuencia de la onda.
+            amplitude (float): Amplitud de la onda.
+            duration (float): Duración de la onda en segundos.
+            steps (int, optional): Número de pasos para generar la onda triangular. Valor por defecto: 100.
+            
+        Returns:
+            bool: True cuando la señal acabe.
+            
+        """
+            
+        chan_a = f"{device_name}/ao{ao_channel}"
         
-        # Establecer el voltaje en -amplitud
+        # Calculate the period of the wave and the time duration of each step
+        period = 1 / frequency
+        step_duration = period / steps
+        
+        # Initialize the DAQ task
         with nidaqmx.Task() as task:
             task.ao_channels.add_ao_voltage_chan(chan_a)
-            task.write(-amplitude)
+            
+            # Get the starting time for the wave generation
+            start_time = time.time()
+            
+            # Generate the wave while staying within the specified duration
+            while time.time() - start_time < duration and not self.end:
+                # Calculate the time elapsed since wave generation started
+                t = time.time() - start_time
+                
+                # Calculate the phase of the wave, ensuring it wraps around to [0, 1)
+                phase = (t / period) % 1.0
+                
+                # Determine the voltage based on the phase
+                if phase < 0.25:
+                    voltage = amplitude * (4 * phase)
+                elif phase < 0.75:
+                    voltage = amplitude * (2 - 4 * phase)
+                else:
+                    voltage = amplitude * (4 * phase - 4)
+                
+                # Write the calculated voltage to the DAQ channel
+                task.write(voltage)
+                
+                # Wait for the specified step duration before generating the next voltage
+                time.sleep(step_duration)
         
-        time.sleep(half_period)
+        # Ensure the DAQ is left in a safe state
+        all_analogic_safe(f"{device_name}")
         
-        current_time = time.time()
-        
-    return True
-        
-        
-def generate_triangle_wave(device_name: str, ao_channel: int, frequency: float, amplitude: float, duration: float,  end: bool, steps: int = 100) -> bool:
-    """
-    Genera una onda triangular de la frecuencia y amplitud especificadas en el canal de salida analógica especificado 
-    en el dispositivo especificado durante el tiempo especificado. La onda se genera con el número especificado de 
-    pasos y, por defecto, se usan 100 pasos para generar una onda suave.
-    
-    Args:
-        device_name (str): Nombre del dispositivo DAQ.
-        ao_channel (int): Canal de salida analógica.
-        frequency (float): Frecuencia de la onda.
-        amplitude (float): Amplitud de la onda.
-        duration (float): Duración de la onda en segundos.
-        steps (int, optional): Número de pasos para generar la onda triangular. Valor por defecto: 100.
-        
-    Returns:
-        bool: True cuando la señal acabe.
-        
-    """
-    
-    # Obtener el nombre completo del canal de salida analógica
-    chan_a = f"{device_name}/ao{ao_channel}"
-    
-    # Calcular la longitud del periodo y el tiempo que lleva dar un paso
-    period = 1 / frequency
-    step_time = period / steps
-    
-    # Calcular el cambio en voltaje por paso
-    volt_step = 2 * amplitude / steps
-
-    # Establecer el tiempo de inicio
-    start_time = time.time()
-    current_time = start_time
-
-    while current_time - start_time < duration and not end:
-        # Incrementar el voltaje en pasos
-        for i in range(steps):
-            with nidaqmx.Task() as task:
-                task.ao_channels.add_ao_voltage_chan(chan_a)
-                task.write(-amplitude + i * volt_step)
-            time.sleep(step_time)
-        
-        # Decrementar el voltaje en pasos
-        for i in range(steps):
-            with nidaqmx.Task() as task:
-                task.ao_channels.add_ao_voltage_chan(chan_a)
-                task.write(amplitude - i * volt_step)
-            time.sleep(step_time)
-        
-        # Actualizar el tiempo actual
-        current_time = time.time()
-        
-        
-    return True
+        # Return True to indicate successful signal generation
+        return True
 
 
-
-def generate_sine_wave(device_name: str, ao_channel: int, frequency: float, amplitude: float, duration: float,  end: bool, steps: float) -> bool:
-    """
-    Genera una señal sinusoidal en el canal de salida analógica especificado durante la duración especificada.
-    El voltaje sinusoidal se calcula en función del tiempo utilizando la frecuencia y la amplitud especificadas.
-
-    Args:
-        device_name (str): El nombre del dispositivo DAQ.
-        ao_channel (int): El número del canal de salida analógica en el que se generará la señal.
-        frequency (float): La frecuencia de la señal sinusoidal en Hz.
-        amplitude (float): La amplitud máxima de la señal sinusoidal en V.
-        duration (float): La duración de la señal sinusoidal en segundos.
-
-    Returns:
-        bool: True cuando la señal acabe.
-
-    Notas:
-        Esta implementación no es precisa ni estable. Para este tipo de señales, se recomienda usar un DAQ que pueda
-        manejarlas eficientemente. Esta implementación también consume mucha CPU debido a la creación y destrucción de
-        tareas en cada iteración del bucle.
-    """
-    chan_a = f"{device_name}/ao{ao_channel}"
-
-    start_time = time.time()
-    current_time = start_time
-
-    while current_time - start_time < duration and not end:
-        # Calcular el voltaje sinusoidal en función del tiempo
-        elapsed_time = current_time - start_time
-        voltage = amplitude * math.sin(2 * math.pi * frequency * elapsed_time)
-
-        # Establecer el voltaje en el canal de salida analógica
+    def generate_sawtooth_wave(self, device_name: str, ao_channel: int, frequency: float, amplitude: float, duration: float, steps: int = 100) -> bool:
+        """
+        Genera una onda de dientes de sierra de la frecuencia y amplitud especificadas en el canal de salida analógica especificado 
+        en el dispositivo especificado durante el tiempo especificado. La onda se genera con el número especificado de 
+        pasos y, por defecto, se usan 100 pasos para generar una onda suave.
+        
+        Args:
+            device_name (str): Nombre del dispositivo DAQ.
+            ao_channel (int): Canal de salida analógica.
+            frequency (float): Frecuencia de la onda.
+            amplitude (float): Amplitud de la onda.
+            duration (float): Duración de la onda en segundos.
+            steps (int, optional): Número de pasos para generar la onda dientes de sierra. Valor por defecto: 100.
+            
+        Returns:
+            bool: True cuando la señal acabe.
+            
+        """
+        
+        chan_a = f"{device_name}/ao{ao_channel}"
+        period = 1 / frequency           
+        start_time = time.time()
+        signal_time = time.time()
+        current_time = start_time
+        
+        
         with nidaqmx.Task() as task:
             task.ao_channels.add_ao_voltage_chan(chan_a)
-            task.write(voltage)
+            while current_time - start_time < duration and not self.end:
+                print(period/steps)
+                print(period/steps)
+                if  current_time < signal_time + period:
+                    task.write(amplitude * period/steps* (time.time()-signal_time))
+                else:
+                     signal_time = time.time()  
+                 
+                # Cambio el delay para que la interrupción de programa sea casi instantanea
+                time.sleep(1/steps)
+                current_time = time.time()
+            
+        all_analogic_safe(f"{device_name}")
+        return True    
 
-        # Esperar un corto período de tiempo antes de actualizar el voltaje nuevamente
-        time.sleep((1/steps))  # Depende del steps para ver la calidad de la señal
-        current_time = time.time()
+
+    
+    
+    def generate_sine_wave(self, device_name: str, ao_channel: int, frequency: float, amplitude: float, duration: float, steps: float) -> bool:
+        """
+        Genera una señal sinusoidal en el canal de salida analógica especificado durante la duración especificada.
+        El voltaje sinusoidal se calcula en función del tiempo utilizando la frecuencia y la amplitud especificadas.
+    
+        Args:
+            device_name (str): El nombre del dispositivo DAQ.
+            ao_channel (int): El número del canal de salida analógica en el que se generará la señal.
+            frequency (float): La frecuencia de la señal sinusoidal en Hz.
+            amplitude (float): La amplitud máxima de la señal sinusoidal en V.
+            duration (float): La duración de la señal sinusoidal en segundos.
+    
+        Returns:
+            bool: True cuando la señal acabe.
+    
+        Notas:
+            Esta implementación no es precisa ni estable. Para este tipo de señales, se recomienda usar un DAQ que pueda
+            manejarlas eficientemente. Esta implementación también consume mucha CPU debido a la creación y destrucción de
+            tareas en cada iteración del bucle.
+        """
+        chan_a = f"{device_name}/ao{ao_channel}"
+    
+        start_time = time.time()
+        current_time = start_time
+        with nidaqmx.Task() as task:
+            task.ao_channels.add_ao_voltage_chan(chan_a)
+            while current_time - start_time < duration and not self.end:
+                # Calcular el voltaje sinusoidal en función del tiempo
+                elapsed_time = current_time - start_time
+                voltage = amplitude * math.sin(2 * math.pi * frequency * elapsed_time)
         
-    return True
+                # Establecer el voltaje en el canal de salida analógica
+                task.write(voltage)
+        
+                # Esperar un corto período de tiempo antes de actualizar el voltaje nuevamente
+                time.sleep((1/steps))  # Depende del steps para ver la calidad de la señal
+                current_time = time.time()
+            
+        all_analogic_safe(f"{device_name}")
+        return True
+    
+    
+    def kill_signal(self):
+        self.end = True
+        print("ENTRO AQUI Y EL BOOL ES: ")
+        print(self.end)
+        
+          
