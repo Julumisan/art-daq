@@ -44,18 +44,25 @@ La siguiente es una lista de las funciones que se encuentran en este paquete:
 
 Además de estas funciones, también se incluyen las funciones extra para generar señales:
 
-    generate_sine_wave(device_name, ao_channel, frequency, amplitude, duration):
+    generate_sine_wave(device_name, ao_channel, frequency, amplitude, duration, steps=100):
         genera una señal sinusoidal con la
         frecuencia, amplitud y duración especificadas en los parámetros.
+    El parámetro opcional "steps" especifica la cantidad de pasos en la formación de la señal sinusoidal.
         
-    generate_square_wave(device_name, ao_channel, frequency, amplitude, duration):
+    generate_square_wave(device_name, ao_channel, frequency, amplitude, duration, steps==100):
         genera una señal cuadrada con la frecuencia, amplitud 
         y duración especificadas en los parámetros.
+    El parámetro opcional "steps" especifica número de pasos para estar atento a la finalización.
         
     generate_triangle_wave(device_name, ao_channel, frequency, amplitude, duration, steps=100):
         genera una señal triangular con la frecuencia, amplitud
         y duración especificadas en los parámetros.
     El parámetro opcional "steps" especifica la cantidad de pasos en cada rampa de la señal triangular.
+    
+    generate_triangle_wave(device_name, ao_channel, frequency, amplitude, duration, steps=100):
+        genera una señal de dientes de sierra con la frecuencia, amplitud
+        y duración especificadas en los parámetros.
+    El parámetro opcional "steps" especifica la cantidad de pasos en cada rampa de la señal de sierra .
     
 """
 

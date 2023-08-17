@@ -357,6 +357,7 @@ class MIN:
             voltage = float(self.spinbox.get())
             daq.set_voltage_analogic(chan_a, voltage)
     
+    
     def set_digital_output(self):
         """
         Establece la salida digital.

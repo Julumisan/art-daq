@@ -438,7 +438,7 @@ class Signals:
 
     
     
-    def generate_sine_wave(self, device_name: str, ao_channel: int, frequency: float, amplitude: float, duration: float, steps: float) -> bool:
+    def generate_sine_wave(self, device_name: str, ao_channel: int, frequency: float, amplitude: float, duration: float, steps: float = 100) -> bool:
         """
         Genera una señal sinusoidal en el canal de salida analógica especificado durante la duración especificada.
         El voltaje sinusoidal se calcula en función del tiempo utilizando la frecuencia y la amplitud especificadas.
@@ -449,14 +449,15 @@ class Signals:
             frequency (float): La frecuencia de la señal sinusoidal en Hz.
             amplitude (float): La amplitud máxima de la señal sinusoidal en V.
             duration (float): La duración de la señal sinusoidal en segundos.
+            steps (float, optional): Número de pasos para generar la onda dientes de sierra. Valor por defecto: 100.
     
         Returns:
             bool: True cuando la señal acabe.
     
         Notas:
-            Esta implementación no es precisa ni estable. Para este tipo de señales, se recomienda usar un DAQ que pueda
-            manejarlas eficientemente. Esta implementación también consume mucha CPU debido a la creación y destrucción de
-            tareas en cada iteración del bucle.
+            Para este tipo de señales, se recomienda usar un DAQ que tenga en sus
+            capacidades las de crear ondas de manera nativa. 
+            
         """
         chan_a = f"{device_name}/ao{ao_channel}"
     
